@@ -11,7 +11,10 @@
     "server": "npm run dev --workspace server",
     "client": "npm run dev --workspace client",
     "build": "npm run build --workspace client",
-    "seed:admin": "npm run seed:admin --workspace server"
+    "seed:admin": "npm run seed:admin --workspace server",
+    "start:server:win": "cmd /c start-server.cmd",
+    "start:client:win": "cmd /c start-client.cmd",
+    "start:dev:win": "cmd /c start-dev.cmd"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
