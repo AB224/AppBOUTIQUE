@@ -12,10 +12,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: CLIENT_URL
-        fromService:
-          name: appboutique-web
-          type: web
-          property: url
+        sync: false
       - key: MONGO_URI
         sync: false
       - key: JWT_SECRET
@@ -52,11 +49,7 @@ services:
     autoDeploy: true
     envVars:
       - key: VITE_API_URL
-        fromService:
-          name: appboutique-api
-          type: web
-          property: url
-        previewValue: https://appboutique-api.onrender.com/api
+        sync: false
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
     routes:
