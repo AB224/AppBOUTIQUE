@@ -13,6 +13,7 @@ const invoiceItemSchema = new mongoose.Schema(
 const invoiceSchema = new mongoose.Schema(
   {
     invoiceNumber: { type: String, required: true, unique: true },
+    type: { type: String, enum: ["sale", "purchase"], default: "sale" },
     customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
     items: { type: [invoiceItemSchema], required: true },
     subtotal: { type: Number, required: true },

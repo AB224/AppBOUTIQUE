@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { api } from "../services/api";
+import { api, downloadBlob } from "../services/api";
 
 const emptyInvoice = {
+  type: "sale",
   customer: "",
   dueDate: "",
   tax: 0,
@@ -55,16 +56,56 @@ export function InvoicesPage() {
     load();
   };
 
+  const exportExcel = async (type) => {
+    const blob = await api(`/invoices/export/excel?type=${type}`);
+    downloadBlob(blob, `factures-${type === "purchase" ? "achats" : "ventes"}-appboutique.xlsx`);
+  };
+
+  const importExcel = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await api("/invoices/import/excel", { method: "POST", body: formData });
+      setMessage(`Import termine : ${result.imported} facture(s), ${result.lines} ligne(s).`);
+      await load();
+    } finally {
+      event.target.value = "";
+    }
+  };
+
   return (
     <div className="stack">
       <div className="page-header">
-        <h1>Factures</h1>
-        <p>Creation, PDF professionnel et envoi par email.</p>
+        <div>
+          <h1>Factures</h1>
+          <p>Creation, PDF professionnel et envoi par email.</p>
+        </div>
+        <div className="actions">
+          <label className="ghost file-action">
+            Importer Excel
+            <input type="file" accept=".xlsx,.xls" onChange={importExcel} />
+          </label>
+          <button type="button" className="primary" onClick={() => exportExcel("sale")}>
+            Export ventes
+          </button>
+          <button type="button" className="primary" onClick={() => exportExcel("purchase")}>
+            Export achats
+          </button>
+        </div>
       </div>
       {message ? <div className="alert success">{message}</div> : null}
       <section className="content-grid">
         <form className="card form-grid" onSubmit={submit}>
           <h2>{editingId ? "Modifier la facture" : "Nouvelle facture"}</h2>
+          <label>
+            Type
+            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              <option value="sale">Vente</option>
+              <option value="purchase">Achat</option>
+            </select>
+          </label>
           <label>
             Client
             <select value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} required>
@@ -150,7 +191,9 @@ export function InvoicesPage() {
               <div key={invoice._id} className="list-row card-inline">
                 <div>
                   <strong>{invoice.invoiceNumber}</strong>
-                  <div className="muted">{invoice.customer?.name}</div>
+                  <div className="muted">
+                    {invoice.type === "purchase" ? "Achat" : "Vente"} - {invoice.customer?.name}
+                  </div>
                 </div>
                 <span>{invoice.total.toFixed(2)} EUR</span>
                 <div className="actions">
@@ -167,6 +210,7 @@ export function InvoicesPage() {
                       setEditingId(invoice._id);
                       setForm({
                         customer: invoice.customer?._id || "",
+                        type: invoice.type || "sale",
                         dueDate: invoice.dueDate ? invoice.dueDate.slice(0, 10) : "",
                         tax: invoice.tax,
                         senderEmail: invoice.senderEmail || "baha3116@gmail.com",

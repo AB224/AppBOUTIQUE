@@ -197,6 +197,17 @@ td {
   flex-wrap: wrap;
 }
 
+.file-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.file-action input {
+  display: none;
+}
+
 .primary,
 .ghost,
 .danger {

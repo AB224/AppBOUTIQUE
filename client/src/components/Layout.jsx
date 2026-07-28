@@ -10,9 +10,7 @@ export function Layout({ children }) {
     { to: "/produits", label: "Produits" },
     { to: "/stocks", label: "Stocks" },
     { to: "/clients", label: "Clients" },
-    { to: "/factures", label: "Factures" },
-    { to: "/securite", label: "Securite" },
-    ...(user?.role === "admin" ? [{ to: "/utilisateurs", label: "Utilisateurs" }] : [])
+    { to: "/factures", label: "Factures" }
   ];
 
   return (

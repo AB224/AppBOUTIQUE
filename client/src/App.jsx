@@ -8,8 +8,6 @@ import { ProductsPage } from "./pages/ProductsPage";
 import { StockPage } from "./pages/StockPage";
 import { CustomersPage } from "./pages/CustomersPage";
 import { InvoicesPage } from "./pages/InvoicesPage";
-import { UsersPage } from "./pages/UsersPage";
-import { SecurityPage } from "./pages/SecurityPage";
 
 function PrivateApp() {
   return (
@@ -21,8 +19,8 @@ function PrivateApp() {
         <Route path="/stocks" element={<StockPage />} />
         <Route path="/clients" element={<CustomersPage />} />
         <Route path="/factures" element={<InvoicesPage />} />
-        <Route path="/securite" element={<SecurityPage />} />
-        <Route path="/utilisateurs" element={<UsersPage />} />
+        <Route path="/securite" element={<Navigate to="/" replace />} />
+        <Route path="/utilisateurs" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
