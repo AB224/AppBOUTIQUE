@@ -10,6 +10,7 @@ const saleRoutes = require("./routes/saleRoutes");
 const stockRoutes = require("./routes/stockRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const cashRoutes = require("./routes/cashRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -64,6 +65,7 @@ app.use("/api/sales", saleRoutes);
 app.use("/api/stocks", stockRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/cash", cashRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -360,6 +360,16 @@ td {
   gap: 8px;
 }
 
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-row input {
+  width: auto;
+}
+
 .card-inline {
   padding: 14px 0;
 }

@@ -33,17 +33,33 @@ export function PosPage() {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [sales, setSales] = useState([]);
+  const [cashMovements, setCashMovements] = useState([]);
   const [query, setQuery] = useState("");
   const [customer, setCustomer] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [cart, setCart] = useState([]);
   const [message, setMessage] = useState("");
+  const [refundForm, setRefundForm] = useState({
+    productId: "",
+    quantity: 1,
+    amount: 0,
+    paymentMethod: "cash",
+    reason: "Produit defectueux",
+    note: "",
+    restock: false
+  });
 
   const load = async () => {
-    const [productsData, salesData, customersData] = await Promise.all([api("/products"), api("/sales"), api("/customers")]);
+    const [productsData, salesData, customersData, cashData] = await Promise.all([
+      api("/products"),
+      api("/sales"),
+      api("/customers"),
+      api("/cash/movements")
+    ]);
     setProducts(productsData);
     setSales(salesData);
     setCustomers(customersData);
+    setCashMovements(cashData);
   };
 
   useEffect(() => {
@@ -83,6 +99,24 @@ export function PosPage() {
     printTicket(sale);
     setCart([]);
     setCustomer("");
+    load();
+  };
+
+  const selectedRefundProduct = products.find((product) => product._id === refundForm.productId);
+
+  const submitRefund = async (event) => {
+    event.preventDefault();
+    const movement = await api("/cash/returns", { method: "POST", body: refundForm });
+    setMessage(`Decaissement retour enregistre : ${movement.amount.toFixed(2)} EUR`);
+    setRefundForm({
+      productId: "",
+      quantity: 1,
+      amount: 0,
+      paymentMethod: "cash",
+      reason: "Produit defectueux",
+      note: "",
+      restock: false
+    });
     load();
   };
 
@@ -179,6 +213,123 @@ export function PosPage() {
           <button className="primary xl" disabled={!cart.length} onClick={checkout}>
             Encaisser
           </button>
+        </div>
+      </section>
+
+      <section className="content-grid">
+        <form className="card form-grid" onSubmit={submitRefund}>
+          <h2>Decaissement retour defectueux</h2>
+          <label>
+            Produit retourne
+            <select
+              value={refundForm.productId}
+              onChange={(e) => {
+                const product = products.find((entry) => entry._id === e.target.value);
+                setRefundForm((current) => ({
+                  ...current,
+                  productId: e.target.value,
+                  amount: product ? product.salePrice * current.quantity : current.amount
+                }));
+              }}
+            >
+              <option value="">Sans produit reference</option>
+              {products.map((product) => (
+                <option key={product._id} value={product._id}>
+                  {product.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="invoice-row">
+            <label>
+              Quantite
+              <input
+                type="number"
+                min="1"
+                value={refundForm.quantity}
+                onChange={(e) => {
+                  const quantity = Number(e.target.value);
+                  setRefundForm((current) => ({
+                    ...current,
+                    quantity,
+                    amount: selectedRefundProduct ? selectedRefundProduct.salePrice * quantity : current.amount
+                  }));
+                }}
+              />
+            </label>
+            <label>
+              Montant
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={refundForm.amount}
+                onChange={(e) => setRefundForm((current) => ({ ...current, amount: Number(e.target.value) }))}
+                required
+              />
+            </label>
+            <label>
+              Sortie
+              <select
+                value={refundForm.paymentMethod}
+                onChange={(e) => setRefundForm((current) => ({ ...current, paymentMethod: e.target.value }))}
+              >
+                <option value="cash">Especes</option>
+                <option value="card">Carte</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Motif
+            <input
+              value={refundForm.reason}
+              onChange={(e) => setRefundForm((current) => ({ ...current, reason: e.target.value }))}
+              required
+            />
+          </label>
+          <label>
+            Note
+            <input
+              placeholder="Ex: emballage ouvert, produit casse..."
+              value={refundForm.note}
+              onChange={(e) => setRefundForm((current) => ({ ...current, note: e.target.value }))}
+            />
+          </label>
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={refundForm.restock}
+              onChange={(e) => setRefundForm((current) => ({ ...current, restock: e.target.checked }))}
+            />
+            Remettre le produit en stock
+          </label>
+          <button className="danger">Valider le decaissement</button>
+        </form>
+
+        <div className="card">
+          <h2>Historique des decaissements</h2>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Produit</th>
+                  <th>Motif</th>
+                  <th>Montant</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashMovements.map((movement) => (
+                  <tr key={movement._id}>
+                    <td>{new Date(movement.createdAt).toLocaleString("fr-FR")}</td>
+                    <td>{movement.product?.name || movement.productName || "-"}</td>
+                    <td>{movement.reason}</td>
+                    <td className="danger-text">-{movement.amount.toFixed(2)} EUR</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 

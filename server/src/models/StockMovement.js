@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const stockMovementSchema = new mongoose.Schema(
   {
     product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-    type: { type: String, enum: ["sale", "restock", "adjustment"], required: true },
+    type: { type: String, enum: ["sale", "restock", "adjustment", "return"], required: true },
     quantity: { type: Number, required: true },
     note: { type: String, trim: true, default: "" },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
