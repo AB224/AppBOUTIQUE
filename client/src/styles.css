@@ -396,6 +396,57 @@ td {
   font-weight: 700;
 }
 
+.credit-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background:
+    linear-gradient(135deg, rgba(47, 122, 85, 0.12), rgba(223, 138, 38, 0.18)),
+    var(--panel);
+}
+
+.credit-badge {
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: #e4f2e8;
+  color: var(--green);
+  font-weight: 800;
+}
+
+.danger-badge {
+  background: #f5d8d2;
+  color: var(--red);
+}
+
+.credit-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.credit-row-due {
+  border-color: #e1a090;
+  background: #fff3ef;
+}
+
+.credit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+
+.payment-input {
+  width: 130px;
+}
+
 @media (max-width: 1100px) {
   .shell,
   .content-grid,
@@ -422,5 +473,18 @@ td {
   .page-header {
     flex-direction: column;
     align-items: start;
+  }
+
+  .credit-hero,
+  .credit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .credit-hero {
+    align-items: start;
+  }
+
+  .credit-actions {
+    justify-content: start;
   }
 }
