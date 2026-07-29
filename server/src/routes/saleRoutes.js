@@ -4,6 +4,7 @@ const Sale = require("../models/Sale");
 const Product = require("../models/Product");
 const StockMovement = require("../models/StockMovement");
 const { protect } = require("../middleware/authMiddleware");
+const mongoose = require("mongoose");
 
 const router = express.Router();
 
@@ -30,11 +31,23 @@ router.post(
       res.status(400);
       throw new Error("Le panier est vide");
     }
+    if (items.length > 100) {
+      res.status(400);
+      throw new Error("Panier trop volumineux");
+    }
+    if (customer && !mongoose.Types.ObjectId.isValid(customer)) {
+      res.status(400);
+      throw new Error("Client invalide");
+    }
 
     const saleItems = [];
     let subtotal = 0;
 
     for (const item of items) {
+      if (!mongoose.Types.ObjectId.isValid(item.product) || Number(item.quantity) <= 0) {
+        res.status(400);
+        throw new Error("Ligne de panier invalide");
+      }
       const product = await Product.findById(item.product);
       if (!product) {
         res.status(404);

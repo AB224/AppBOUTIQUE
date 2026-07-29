@@ -28,13 +28,15 @@ const randomPassword = () => crypto.randomBytes(24).toString("hex");
 const createOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const createRequestId = () => crypto.randomBytes(24).toString("hex");
 const getGoogleAudiences = () =>
-  [
-    process.env.GOOGLE_CLIENT_ID,
-    ...(process.env.GOOGLE_CLIENT_IDS || "").split(","),
-    "634714055660-rajqvc8gd2olr4022jtim53mtj5ilu8u.apps.googleusercontent.com"
-  ]
+  [process.env.GOOGLE_CLIENT_ID, ...(process.env.GOOGLE_CLIENT_IDS || "").split(",")]
     .map((value) => String(value || "").trim())
     .filter(Boolean);
+const isLocked = (user) => user.lockedUntil && user.lockedUntil.getTime() > Date.now();
+const isHashMatch = (expectedHash, value) => {
+  const expected = Buffer.from(String(expectedHash || ""), "hex");
+  const received = Buffer.from(hashValue(value), "hex");
+  return expected.length === received.length && crypto.timingSafeEqual(expected, received);
+};
 
 const verifyGoogleCredential = async (credential) => {
   const audiences = getGoogleAudiences();
@@ -73,18 +75,39 @@ router.post(
   "/login",
   asyncHandler(async (req, res) => {
     const { email, password, totpCode } = req.body;
-    const user = await User.findOne({ email }).select("+totpSecret");
+    const user = await User.findOne({ email: String(email || "").toLowerCase().trim() }).select(
+      "+totpSecret +failedLoginAttempts +lockedUntil"
+    );
     if (!user || !(await user.matchPassword(password))) {
+      if (user) {
+        user.failedLoginAttempts += 1;
+        if (user.failedLoginAttempts >= 5) {
+          user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+        }
+        await user.save();
+      }
       res.status(401);
       throw new Error("Email ou mot de passe invalide");
     }
 
+    if (isLocked(user)) {
+      res.status(423);
+      throw new Error("Compte temporairement verrouille. Reessayez dans 15 minutes.");
+    }
+
     if (user.totpEnabled) {
       if (!totpCode || !authenticator.check(String(totpCode).replace(/\s+/g, ""), user.totpSecret)) {
+        user.failedLoginAttempts += 1;
+        await user.save();
         res.status(401);
         throw new Error("Code TOTP requis ou invalide");
       }
     }
+
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
+    user.lastLoginAt = new Date();
+    await user.save();
 
     res.json({ token: generateToken(user._id), user: serializeUser(user) });
   })
@@ -152,7 +175,7 @@ router.post(
       throw new Error("Le code email a expire");
     }
 
-    if (user.loginOtpHash !== hashValue(String(code).trim())) {
+    if (!isHashMatch(user.loginOtpHash, String(code).trim())) {
       res.status(400);
       throw new Error("Code email invalide");
     }
@@ -160,6 +183,7 @@ router.post(
     user.loginOtpHash = "";
     user.loginOtpExpiresAt = null;
     user.loginOtpRequestId = "";
+    user.lastLoginAt = new Date();
     await user.save();
 
     res.json({ token: generateToken(user._id), user: serializeUser(user) });

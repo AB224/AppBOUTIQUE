@@ -5,11 +5,21 @@ const XLSX = require("xlsx");
 const Invoice = require("../models/Invoice");
 const Customer = require("../models/Customer");
 const { protect } = require("../middleware/authMiddleware");
+const validateObjectId = require("../middleware/validateObjectId");
 const { generateInvoicePdfBuffer } = require("../utils/pdf");
 const { sendInvoiceEmail } = require("../utils/mailer");
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter(req, file, callback) {
+    if (!/\.xlsx?$/i.test(file.originalname)) {
+      return callback(new Error("Seuls les fichiers Excel .xlsx/.xls sont acceptes"));
+    }
+    return callback(null, true);
+  }
+});
 
 const getCell = (row, keys, fallback = "") => {
   const key = keys.find((item) => row[item] !== undefined && row[item] !== null && row[item] !== "");
@@ -24,6 +34,10 @@ const toNumber = (value, fallback = 0) => {
 const normalizeInvoiceType = (value) => {
   const normalized = String(value || "").trim().toLowerCase();
   return ["achat", "purchase", "facture achat"].includes(normalized) ? "purchase" : "sale";
+};
+const normalizeStatus = (value) => {
+  const status = String(value || "draft").trim().toLowerCase();
+  return ["draft", "sent", "paid"].includes(status) ? status : "draft";
 };
 
 const sendWorkbook = (res, workbook, filename) => {
@@ -99,9 +113,13 @@ router.post(
       throw new Error("Fichier Excel manquant");
     }
 
-    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer", cellFormula: false, cellHTML: false });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    if (rows.length > 1000) {
+      res.status(400);
+      throw new Error("Import limite a 1000 lignes par fichier");
+    }
     const groups = new Map();
 
     rows.forEach((row, index) => {
@@ -147,7 +165,7 @@ router.post(
         invoiceNumber,
         type: normalizeInvoiceType(getCell(first, ["type", "Type"], "sale")),
         customer: customer._id,
-        status: String(getCell(first, ["statut", "status"], "draft")).trim().toLowerCase() || "draft",
+        status: normalizeStatus(getCell(first, ["statut", "status"], "draft")),
         dueDate: getCell(first, ["echeance", "dueDate", "Echeance"], undefined) || undefined,
         senderEmail: getCell(first, ["email_expediteur", "senderEmail"], process.env.DEFAULT_SENDER_EMAIL),
         tax: toNumber(getCell(first, ["taxe_facture", "tax", "Taxes"], 0)),
@@ -185,6 +203,7 @@ router.post(
 router.put(
   "/:id",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const payload = buildInvoicePayload(req.body);
     const invoice = await Invoice.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true }).populate(
@@ -202,6 +221,7 @@ router.put(
 router.delete(
   "/:id",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) {
@@ -216,6 +236,7 @@ router.delete(
 router.get(
   "/:id/pdf",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const invoice = await Invoice.findById(req.params.id).populate("customer", "name email phone");
     if (!invoice) {
@@ -232,6 +253,7 @@ router.get(
 router.post(
   "/:id/send",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const invoice = await Invoice.findById(req.params.id).populate("customer", "name email phone");
     if (!invoice) {

@@ -14,7 +14,10 @@ const userSchema = new mongoose.Schema(
     totpVerifiedAt: { type: Date, default: null },
     loginOtpHash: { type: String, select: false, default: "" },
     loginOtpExpiresAt: { type: Date, select: false, default: null },
-    loginOtpRequestId: { type: String, select: false, default: "" }
+    loginOtpRequestId: { type: String, select: false, default: "" },
+    failedLoginAttempts: { type: Number, select: false, default: 0 },
+    lockedUntil: { type: Date, select: false, default: null },
+    lastLoginAt: { type: Date, default: null }
   },
   { timestamps: true }
 );

@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const Product = require("../models/Product");
 const StockMovement = require("../models/StockMovement");
 const { protect } = require("../middleware/authMiddleware");
+const mongoose = require("mongoose");
 
 const router = express.Router();
 
@@ -23,6 +24,10 @@ router.post(
   protect,
   asyncHandler(async (req, res) => {
     const { productId, quantity, note } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(productId) || Number(quantity) <= 0) {
+      res.status(400);
+      throw new Error("Produit ou quantite invalide");
+    }
     const product = await Product.findById(productId);
     if (!product) {
       res.status(404);

@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
+const hpp = require("hpp");
 const rateLimit = require("express-rate-limit");
 const morgan = require("morgan");
 const authRoutes = require("./routes/authRoutes");
@@ -37,11 +39,27 @@ const authLimiter = rateLimit({
 });
 
 app.set("trust proxy", 1);
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.disable("x-powered-by");
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "https://accounts.google.com", "https://apis.google.com"],
+        "frame-src": ["'self'", "https://accounts.google.com"],
+        "connect-src": ["'self'", "https://accounts.google.com"],
+        "img-src": ["'self'", "data:", "https:"]
+      }
+    },
+    referrerPolicy: { policy: "no-referrer" }
+  })
+);
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || (process.env.NODE_ENV !== "production" && allowedOrigins.length === 0)) {
         return callback(null, true);
       }
       return callback(new Error("Origine non autorisee par CORS"));
@@ -49,7 +67,9 @@ app.use(
     credentials: false
   })
 );
-app.use(express.json({ limit: "5mb" }));
+app.use(express.json({ limit: "1mb" }));
+app.use(mongoSanitize());
+app.use(hpp());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use("/api", apiLimiter);
 app.use("/api/auth", authLimiter);

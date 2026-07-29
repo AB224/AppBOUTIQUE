@@ -4,9 +4,20 @@ const multer = require("multer");
 const XLSX = require("xlsx");
 const Product = require("../models/Product");
 const { protect } = require("../middleware/authMiddleware");
+const validateObjectId = require("../middleware/validateObjectId");
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter(req, file, callback) {
+    if (!/\.xlsx?$/i.test(file.originalname)) {
+      return callback(new Error("Seuls les fichiers Excel .xlsx/.xls sont acceptes"));
+    }
+    return callback(null, true);
+  }
+});
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const getCell = (row, keys, fallback = "") => {
   const key = keys.find((item) => row[item] !== undefined && row[item] !== null && row[item] !== "");
@@ -29,12 +40,13 @@ router.get(
   "/",
   protect,
   asyncHandler(async (req, res) => {
-    const query = req.query.q
+    const search = String(req.query.q || "").trim().slice(0, 80);
+    const query = search
       ? {
           $or: [
-            { name: { $regex: req.query.q, $options: "i" } },
-            { category: { $regex: req.query.q, $options: "i" } },
-            { barcode: { $regex: req.query.q, $options: "i" } }
+            { name: { $regex: escapeRegex(search), $options: "i" } },
+            { category: { $regex: escapeRegex(search), $options: "i" } },
+            { barcode: { $regex: escapeRegex(search), $options: "i" } }
           ]
         }
       : {};
@@ -73,9 +85,13 @@ router.post(
       throw new Error("Fichier Excel manquant");
     }
 
-    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer", cellFormula: false, cellHTML: false });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    if (rows.length > 1000) {
+      res.status(400);
+      throw new Error("Import limite a 1000 lignes par fichier");
+    }
     let created = 0;
     let updated = 0;
 
@@ -120,6 +136,7 @@ router.post(
 router.put(
   "/:id",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!product) {
@@ -133,6 +150,7 @@ router.put(
 router.delete(
   "/:id",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) {

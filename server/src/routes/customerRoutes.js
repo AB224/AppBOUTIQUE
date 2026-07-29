@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const Customer = require("../models/Customer");
 const Sale = require("../models/Sale");
 const { protect } = require("../middleware/authMiddleware");
+const validateObjectId = require("../middleware/validateObjectId");
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.post(
 router.put(
   "/:id",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!customer) {
@@ -40,6 +42,7 @@ router.put(
 router.delete(
   "/:id",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const customer = await Customer.findById(req.params.id);
     if (!customer) {
@@ -54,6 +57,7 @@ router.delete(
 router.get(
   "/:id/history",
   protect,
+  validateObjectId(),
   asyncHandler(async (req, res) => {
     const sales = await Sale.find({ customer: req.params.id }).sort({ createdAt: -1 });
     res.json(sales);

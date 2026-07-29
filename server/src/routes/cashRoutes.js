@@ -4,6 +4,7 @@ const CashMovement = require("../models/CashMovement");
 const Product = require("../models/Product");
 const StockMovement = require("../models/StockMovement");
 const { protect } = require("../middleware/authMiddleware");
+const mongoose = require("mongoose");
 
 const router = express.Router();
 
@@ -39,6 +40,10 @@ router.post(
 
     let product = null;
     if (productId) {
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        res.status(400);
+        throw new Error("Produit invalide");
+      }
       product = await Product.findById(productId);
       if (!product) {
         res.status(404);
