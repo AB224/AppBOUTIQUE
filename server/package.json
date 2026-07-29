@@ -16,18 +16,19 @@
     "express-async-handler": "^1.2.0",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.5.0",
-    "google-auth-library": "^9.15.1",
+    "google-auth-library": "^10.9.1",
     "helmet": "^8.0.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.5",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
-    "nodemailer": "^6.9.16",
+    "nodemailer": "^9.0.3",
     "otplib": "^12.0.1",
     "pdfkit": "^0.16.0",
     "qrcode": "^1.5.4",
-    "xlsx": "^0.18.5"
+    "read-excel-file": "^9.3.5",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

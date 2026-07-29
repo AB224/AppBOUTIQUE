@@ -1,7 +1,8 @@
 const express = require("express");
 const asyncHandler = require("express-async-handler");
 const multer = require("multer");
-const XLSX = require("xlsx");
+const readXlsxFile = require("read-excel-file/node");
+const writeXlsxFile = require("write-excel-file/node");
 const Product = require("../models/Product");
 const { protect } = require("../middleware/authMiddleware");
 const validateObjectId = require("../middleware/validateObjectId");
@@ -30,10 +31,38 @@ const toNumber = (value, fallback = 0) => {
 };
 
 const sendWorkbook = (res, workbook, filename) => {
-  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  res.send(buffer);
+  return res.send(workbook);
+};
+
+const rowsToObjects = (rows) => {
+  const headers = (rows[0] || []).map((header) => String(header || "").trim());
+  return rows.slice(1).map((row) =>
+    headers.reduce((item, header, index) => {
+      if (header) item[header] = row[index] ?? "";
+      return item;
+    }, {})
+  );
+};
+
+const objectsToWorkbook = (rows) => {
+  const headers = Object.keys(rows[0] || {
+    nom: "",
+    categorie: "",
+    prix_achat: "",
+    prix_vente: "",
+    stock: "",
+    code_barres: "",
+    alerte_stock_faible: ""
+  });
+  return writeXlsxFile(
+    [
+      headers.map((header) => ({ value: header, fontWeight: "bold" })),
+      ...rows.map((row) => headers.map((header) => ({ value: row[header] ?? "" })))
+    ],
+    { buffer: true }
+  );
 };
 
 router.get(
@@ -69,8 +98,7 @@ router.get(
       code_barres: product.barcode,
       alerte_stock_faible: product.lowStockAlert
     }));
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), "Produits");
+    const workbook = await objectsToWorkbook(rows);
     sendWorkbook(res, workbook, "produits-appboutique.xlsx");
   })
 );
@@ -85,9 +113,7 @@ router.post(
       throw new Error("Fichier Excel manquant");
     }
 
-    const workbook = XLSX.read(req.file.buffer, { type: "buffer", cellFormula: false, cellHTML: false });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    const rows = rowsToObjects(await readXlsxFile(req.file.buffer));
     if (rows.length > 1000) {
       res.status(400);
       throw new Error("Import limite a 1000 lignes par fichier");

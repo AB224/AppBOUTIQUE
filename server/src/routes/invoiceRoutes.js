@@ -1,7 +1,8 @@
 const express = require("express");
 const asyncHandler = require("express-async-handler");
 const multer = require("multer");
-const XLSX = require("xlsx");
+const readXlsxFile = require("read-excel-file/node");
+const writeXlsxFile = require("write-excel-file/node");
 const Invoice = require("../models/Invoice");
 const Customer = require("../models/Customer");
 const { protect } = require("../middleware/authMiddleware");
@@ -41,10 +42,45 @@ const normalizeStatus = (value) => {
 };
 
 const sendWorkbook = (res, workbook, filename) => {
-  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  res.send(buffer);
+  return res.send(workbook);
+};
+
+const rowsToObjects = (rows) => {
+  const headers = (rows[0] || []).map((header) => String(header || "").trim());
+  return rows.slice(1).map((row) =>
+    headers.reduce((item, header, index) => {
+      if (header) item[header] = row[index] ?? "";
+      return item;
+    }, {})
+  );
+};
+
+const objectsToWorkbook = (rows) => {
+  const headers = Object.keys(rows[0] || {
+    numero_facture: "",
+    type: "",
+    statut: "",
+    nom_client_ou_fournisseur: "",
+    email: "",
+    telephone: "",
+    echeance: "",
+    email_expediteur: "",
+    description: "",
+    quantite: "",
+    prix_unitaire: "",
+    taxe_facture: "",
+    total_ligne: "",
+    total_facture: ""
+  });
+  return writeXlsxFile(
+    [
+      headers.map((header) => ({ value: header, fontWeight: "bold" })),
+      ...rows.map((row) => headers.map((header) => ({ value: row[header] ?? "" })))
+    ],
+    { buffer: true }
+  );
 };
 
 const buildInvoicePayload = (body) => {
@@ -97,8 +133,7 @@ router.get(
         total_facture: invoice.total
       }))
     );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), type === "purchase" ? "Achats" : "Ventes");
+    const workbook = await objectsToWorkbook(rows);
     sendWorkbook(res, workbook, `factures-${type === "purchase" ? "achats" : "ventes"}-appboutique.xlsx`);
   })
 );
@@ -113,9 +148,7 @@ router.post(
       throw new Error("Fichier Excel manquant");
     }
 
-    const workbook = XLSX.read(req.file.buffer, { type: "buffer", cellFormula: false, cellHTML: false });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    const rows = rowsToObjects(await readXlsxFile(req.file.buffer));
     if (rows.length > 1000) {
       res.status(400);
       throw new Error("Import limite a 1000 lignes par fichier");
