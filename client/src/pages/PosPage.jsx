@@ -41,6 +41,7 @@ export function PosPage() {
   const [message, setMessage] = useState("");
   const [refundForm, setRefundForm] = useState({
     productId: "",
+    productReference: "",
     quantity: 1,
     amount: 0,
     paymentMethod: "cash",
@@ -110,6 +111,7 @@ export function PosPage() {
     setMessage(`Decaissement retour enregistre : ${movement.amount.toFixed(2)} EUR`);
     setRefundForm({
       productId: "",
+      productReference: "",
       quantity: 1,
       amount: 0,
       paymentMethod: "cash",
@@ -240,6 +242,14 @@ export function PosPage() {
               ))}
             </select>
           </label>
+          <label>
+            Ref. produit retournee
+            <input
+              placeholder="Reference, code-barres ou numero du ticket"
+              value={refundForm.productReference}
+              onChange={(e) => setRefundForm((current) => ({ ...current, productReference: e.target.value }))}
+            />
+          </label>
           <div className="invoice-row">
             <label>
               Quantite
@@ -322,7 +332,10 @@ export function PosPage() {
                 {cashMovements.map((movement) => (
                   <tr key={movement._id}>
                     <td>{new Date(movement.createdAt).toLocaleString("fr-FR")}</td>
-                    <td>{movement.product?.name || movement.productName || "-"}</td>
+                    <td>
+                      {movement.product?.name || movement.productName || "-"}
+                      {movement.productReference ? <div className="muted">Ref: {movement.productReference}</div> : null}
+                    </td>
                     <td>{movement.reason}</td>
                     <td className="danger-text">-{movement.amount.toFixed(2)} EUR</td>
                   </tr>

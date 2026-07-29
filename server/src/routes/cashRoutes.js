@@ -23,7 +23,7 @@ router.post(
   "/returns",
   protect,
   asyncHandler(async (req, res) => {
-    const { productId, quantity, amount, paymentMethod, reason, note, restock } = req.body;
+    const { productId, productReference, quantity, amount, paymentMethod, reason, note, restock } = req.body;
     const refundAmount = Number(amount);
     const refundQuantity = Number(quantity || 1);
 
@@ -63,6 +63,7 @@ router.post(
       type: "return_refund",
       product: product?._id || null,
       productName: product?.name || "",
+      productReference: productReference || product?.barcode || "",
       quantity: refundQuantity,
       amount: refundAmount,
       paymentMethod: paymentMethod || "cash",
