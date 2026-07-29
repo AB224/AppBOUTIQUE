@@ -27,15 +27,24 @@ const hashValue = (value) => crypto.createHash("sha256").update(String(value)).d
 const randomPassword = () => crypto.randomBytes(24).toString("hex");
 const createOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const createRequestId = () => crypto.randomBytes(24).toString("hex");
+const getGoogleAudiences = () =>
+  [
+    process.env.GOOGLE_CLIENT_ID,
+    ...(process.env.GOOGLE_CLIENT_IDS || "").split(","),
+    "634714055660-rajqvc8gd2olr4022jtim53mtj5ilu8u.apps.googleusercontent.com"
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
 
 const verifyGoogleCredential = async (credential) => {
-  if (!process.env.GOOGLE_CLIENT_ID) {
+  const audiences = getGoogleAudiences();
+  if (!audiences.length) {
     throw new Error("GOOGLE_CLIENT_ID manquant dans la configuration serveur");
   }
 
   const ticket = await googleClient.verifyIdToken({
     idToken: credential,
-    audience: process.env.GOOGLE_CLIENT_ID
+    audience: audiences
   });
 
   const payload = ticket.getPayload();
