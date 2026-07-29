@@ -21,6 +21,9 @@ const allowedOrigins = (process.env.CLIENT_URL || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+if (process.env.NODE_ENV === "production" && !allowedOrigins.includes("https://appboutique-web.onrender.com")) {
+  allowedOrigins.push("https://appboutique-web.onrender.com");
+}
 
 const apiLimiter = rateLimit({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),

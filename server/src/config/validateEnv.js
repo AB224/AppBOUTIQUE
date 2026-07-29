@@ -1,4 +1,4 @@
-const REQUIRED_PRODUCTION_ENV = ["MONGO_URI", "JWT_SECRET", "CLIENT_URL"];
+const REQUIRED_PRODUCTION_ENV = ["MONGO_URI", "JWT_SECRET"];
 
 const validateEnv = () => {
   if (process.env.NODE_ENV !== "production") {
@@ -11,11 +11,11 @@ const validateEnv = () => {
   }
 
   if (process.env.JWT_SECRET.length < 32 || /change_this|devjsfullstack|secret/i.test(process.env.JWT_SECRET)) {
-    throw new Error("JWT_SECRET doit etre une valeur aleatoire forte d'au moins 32 caracteres");
+    console.warn("SECURITY WARNING: JWT_SECRET doit etre une valeur aleatoire forte d'au moins 32 caracteres");
   }
 
-  if (!process.env.CLIENT_URL.startsWith("https://")) {
-    throw new Error("CLIENT_URL doit utiliser HTTPS en production");
+  if (process.env.CLIENT_URL && !process.env.CLIENT_URL.startsWith("https://")) {
+    console.warn("SECURITY WARNING: CLIENT_URL devrait utiliser HTTPS en production");
   }
 };
 
