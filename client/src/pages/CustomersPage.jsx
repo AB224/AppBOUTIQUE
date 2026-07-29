@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../services/api";
 
 const emptyCustomer = { name: "", phone: "", email: "" };
-const emptyCredit = { reference: "", description: "", amount: 0 };
+const emptyCredit = { reference: "", description: "", amount: "" };
 
 const formatCurrency = (value) => `${Number(value || 0).toFixed(2)} EUR`;
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString("fr-FR") : "-");
@@ -17,8 +17,9 @@ export function CustomersPage() {
   const [paymentByCredit, setPaymentByCredit] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  const load = () => api("/customers").then(setCustomers);
+  const load = () => api("/customers").then(setCustomers).catch((err) => setError(err.message));
 
   useEffect(() => {
     load();
@@ -37,6 +38,7 @@ export function CustomersPage() {
   };
 
   const openHistory = async (customer) => {
+    setError("");
     setSelected(customer);
     const [historyData, creditData] = await Promise.all([
       api(`/customers/${customer._id}/history`),
@@ -45,7 +47,6 @@ export function CustomersPage() {
     setHistory(historyData);
     setCredits(creditData);
     setCreditForm(emptyCredit);
-    setMessage("");
   };
 
   const refreshSelected = async () => {
@@ -57,24 +58,50 @@ export function CustomersPage() {
   const submitCredit = async (event) => {
     event.preventDefault();
     if (!selected) return;
-    const credit = await api(`/customers/${selected._id}/credits`, { method: "POST", body: creditForm });
-    setCreditForm(emptyCredit);
-    setMessage(`Creance ajoutee. Prochain rappel le ${formatDate(credit.nextReminderAt)}.`);
-    await refreshSelected();
+    setError("");
+    setMessage("");
+    const amount = Number(creditForm.amount);
+    if (!amount || amount <= 0) {
+      setError("Saisis un montant de creance superieur a 0 EUR.");
+      return;
+    }
+    try {
+      const credit = await api(`/customers/${selected._id}/credits`, {
+        method: "POST",
+        body: { ...creditForm, amount }
+      });
+      setCreditForm(emptyCredit);
+      await refreshSelected();
+      setMessage(`Creance ajoutee. Prochain rappel le ${formatDate(credit.nextReminderAt)}.`);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const markReminderDone = async (creditId) => {
-    const credit = await api(`/customers/credits/${creditId}`, { method: "PATCH", body: { action: "reminder" } });
-    setMessage(`Rappel note. Prochain rappel le ${formatDate(credit.nextReminderAt)}.`);
-    await refreshSelected();
+    try {
+      const credit = await api(`/customers/credits/${creditId}`, { method: "PATCH", body: { action: "reminder" } });
+      await refreshSelected();
+      setMessage(`Rappel note. Prochain rappel le ${formatDate(credit.nextReminderAt)}.`);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const registerPayment = async (creditId) => {
     const paidAmount = Number(paymentByCredit[creditId] || 0);
-    const credit = await api(`/customers/credits/${creditId}`, { method: "PATCH", body: { action: "payment", paidAmount } });
-    setPaymentByCredit((current) => ({ ...current, [creditId]: "" }));
-    setMessage(credit.status === "paid" ? "Creance soldee." : `Paiement enregistre. Reste ${formatCurrency(credit.remainingAmount)}.`);
-    await refreshSelected();
+    if (!paidAmount || paidAmount <= 0) {
+      setError("Saisis un montant paye superieur a 0 EUR.");
+      return;
+    }
+    try {
+      const credit = await api(`/customers/credits/${creditId}`, { method: "PATCH", body: { action: "payment", paidAmount } });
+      setPaymentByCredit((current) => ({ ...current, [creditId]: "" }));
+      await refreshSelected();
+      setMessage(credit.status === "paid" ? "Creance soldee." : `Paiement enregistre. Reste ${formatCurrency(credit.remainingAmount)}.`);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const totalCredit = credits
@@ -89,6 +116,7 @@ export function CustomersPage() {
         <p>Fiches clients, historique d'achats et suivi des creances.</p>
       </div>
       {message ? <div className="alert success">{message}</div> : null}
+      {error ? <div className="alert error">{error}</div> : null}
       <section className="content-grid">
         <form className="card form-grid" onSubmit={submit}>
           <h2>{editingId ? "Modifier le client" : "Ajouter un client"}</h2>
@@ -192,11 +220,14 @@ export function CustomersPage() {
                   min="0"
                   step="0.01"
                   value={creditForm.amount}
-                  onChange={(e) => setCreditForm({ ...creditForm, amount: Number(e.target.value) })}
+                  placeholder="0.00"
+                  onChange={(e) => setCreditForm({ ...creditForm, amount: e.target.value })}
                   required
                 />
               </label>
-              <button className="primary">Ajouter la creance</button>
+              <button className="primary" disabled={Number(creditForm.amount) <= 0}>
+                Ajouter la creance
+              </button>
             </form>
 
             <div className="card">
