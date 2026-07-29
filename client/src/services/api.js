@@ -21,6 +21,11 @@ export async function api(path, options = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: "Erreur reseau" }));
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      throw new Error("Session expiree ou invalide. Reconnecte-toi puis reessaie.");
+    }
     throw new Error(error.message || "Erreur inconnue");
   }
 

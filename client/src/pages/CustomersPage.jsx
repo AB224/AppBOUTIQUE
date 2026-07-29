@@ -38,15 +38,21 @@ export function CustomersPage() {
   };
 
   const openHistory = async (customer) => {
-    setError("");
-    setSelected(customer);
-    const [historyData, creditData] = await Promise.all([
-      api(`/customers/${customer._id}/history`),
-      api(`/customers/credits/customer/${customer._id}`)
-    ]);
-    setHistory(historyData);
-    setCredits(creditData);
-    setCreditForm(emptyCredit);
+    try {
+      setError("");
+      setSelected(customer);
+      const [historyData, creditData] = await Promise.all([
+        api(`/customers/${customer._id}/history`),
+        api(`/customers/credits/customer/${customer._id}`)
+      ]);
+      setHistory(historyData);
+      setCredits(creditData);
+      setCreditForm(emptyCredit);
+    } catch (err) {
+      setHistory([]);
+      setCredits([]);
+      setError(err.message);
+    }
   };
 
   const refreshSelected = async () => {
