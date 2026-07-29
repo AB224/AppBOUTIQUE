@@ -42,7 +42,7 @@ export function CustomersPage() {
     setSelected(customer);
     const [historyData, creditData] = await Promise.all([
       api(`/customers/${customer._id}/history`),
-      api(`/customers/${customer._id}/credits`)
+      api(`/customers/credits/customer/${customer._id}`)
     ]);
     setHistory(historyData);
     setCredits(creditData);
@@ -66,7 +66,7 @@ export function CustomersPage() {
       return;
     }
     try {
-      const credit = await api(`/customers/${selected._id}/credits`, {
+      const credit = await api(`/customers/credits/customer/${selected._id}`, {
         method: "POST",
         body: { ...creditForm, amount }
       });

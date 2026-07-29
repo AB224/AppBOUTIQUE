@@ -75,7 +75,7 @@ app.use("/api", apiLimiter);
 app.use("/api/auth", authLimiter);
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok", version: "credits-2026-07-29" });
 });
 
 app.use("/api/auth", authRoutes);

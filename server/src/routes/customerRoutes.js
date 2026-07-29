@@ -112,8 +112,48 @@ router.get(
   })
 );
 
+router.get(
+  "/credits/customer/:id",
+  protect,
+  validateObjectId(),
+  asyncHandler(async (req, res) => {
+    const credits = await CustomerCredit.find({ customer: req.params.id }).sort({ createdAt: -1 });
+    res.json(credits.map(serializeCredit));
+  })
+);
+
 router.post(
   "/:id/credits",
+  protect,
+  validateObjectId(),
+  asyncHandler(async (req, res) => {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) {
+      res.status(404);
+      throw new Error("Client introuvable");
+    }
+
+    const amount = Number(req.body.amount);
+    if (!amount || amount <= 0) {
+      res.status(400);
+      throw new Error("Montant de creance invalide");
+    }
+
+    const credit = await CustomerCredit.create({
+      customer: customer._id,
+      reference: req.body.reference || "",
+      description: req.body.description || "Achat non paye",
+      amount,
+      nextReminderAt: getNextReminderDate(),
+      createdBy: req.user._id
+    });
+
+    res.status(201).json(serializeCredit(credit));
+  })
+);
+
+router.post(
+  "/credits/customer/:id",
   protect,
   validateObjectId(),
   asyncHandler(async (req, res) => {
