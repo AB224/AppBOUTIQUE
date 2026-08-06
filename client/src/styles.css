@@ -129,10 +129,105 @@ img {
   margin-top: 12px;
 }
 
+.stat-card small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.stat-card-button {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.stat-card-button:hover,
+.stat-card-button:focus-visible,
+.stat-card.active {
+  transform: translateY(-3px);
+  border-color: rgba(47, 122, 85, 0.5);
+  box-shadow: 0 24px 50px rgba(75, 52, 27, 0.16);
+  outline: none;
+}
+
 .accent-green { border-top: 6px solid var(--green); }
 .accent-orange { border-top: 6px solid var(--orange); }
 .accent-blue { border-top: 6px solid var(--blue); }
 .accent-red { border-top: 6px solid var(--red); }
+
+.dashboard-detail {
+  border-color: rgba(47, 122, 85, 0.28);
+  animation: panel-in 220ms ease both;
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-title h2 {
+  margin: 4px 0 0;
+}
+
+.eyebrow {
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-chip {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #efe4d2;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.dashboard-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.detail-pill {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.detail-pill strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.25rem;
+}
+
+.block {
+  display: block;
+  margin-top: 4px;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .page-header {
   display: flex;
@@ -451,6 +546,7 @@ td {
   .shell,
   .content-grid,
   .stats-grid,
+  .dashboard-detail-grid,
   .pos-layout,
   .login-grid {
     grid-template-columns: 1fr;
@@ -473,6 +569,10 @@ td {
   .page-header {
     flex-direction: column;
     align-items: start;
+  }
+
+  .section-title {
+    flex-direction: column;
   }
 
   .credit-hero,

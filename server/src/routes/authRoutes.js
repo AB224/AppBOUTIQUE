@@ -204,7 +204,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select("+totpSecret");
     const secret = authenticator.generateSecret();
-    const appName = process.env.TOTP_APP_NAME || "AppBoutique";
+    const appName = process.env.TOTP_APP_NAME || "Alimentation les Deux Frères";
     const otpauthUrl = authenticator.keyuri(user.email, appName, secret);
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
 

@@ -64,6 +64,19 @@ router.get(
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
 
+    const allLowStockProducts = products.filter((product) => product.stock <= product.lowStockAlert);
+    const lowStockProducts = allLowStockProducts
+      .sort((a, b) => a.stock - b.stock)
+      .slice(0, 8)
+      .map((product) => ({
+        _id: product._id,
+        name: product.name,
+        category: product.category,
+        barcode: product.barcode,
+        stock: product.stock,
+        lowStockAlert: product.lowStockAlert
+      }));
+
     const grossRevenue = {
       day: sumSales(daySales),
       week: sumSales(weekSales),
@@ -88,10 +101,11 @@ router.get(
       stats: {
         salesCount: sales.length,
         productsCount: products.length,
-        lowStockCount: products.filter((product) => product.stock <= product.lowStockAlert).length,
+        lowStockCount: allLowStockProducts.length,
         refundCount: monthRefunds.length
       },
       topProducts,
+      lowStockProducts,
       refundedProducts: recentRefunds.map((movement) => ({
         _id: movement._id,
         createdAt: movement.createdAt,

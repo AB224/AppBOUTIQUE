@@ -38,9 +38,9 @@ const sendLoginCodeEmail = async ({ to, code }) => {
   return transporter.sendMail({
     from: process.env.DEFAULT_SENDER_EMAIL || process.env.GMAIL_SMTP_USER,
     to,
-    subject: "Code de connexion AppBoutique",
-    text: `Votre code de connexion AppBoutique est ${code}. Il expire dans 10 minutes.`,
-    html: `<div style="font-family:Arial,sans-serif;padding:16px;"><h2>Connexion AppBoutique</h2><p>Votre code de connexion est :</p><div style="font-size:32px;font-weight:700;letter-spacing:6px;margin:16px 0;">${code}</div><p>Ce code expire dans 10 minutes.</p></div>`
+    subject: "Code de connexion Alimentation les Deux Frères",
+    text: `Votre code de connexion Alimentation les Deux Frères est ${code}. Il expire dans 10 minutes.`,
+    html: `<div style="font-family:Arial,sans-serif;padding:16px;"><h2>Connexion Alimentation les Deux Frères</h2><p>Votre code de connexion est :</p><div style="font-size:32px;font-weight:700;letter-spacing:6px;margin:16px 0;">${code}</div><p>Ce code expire dans 10 minutes.</p></div>`
   });
 };
 

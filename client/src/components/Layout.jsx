@@ -17,8 +17,8 @@ export function Layout({ children }) {
     <div className="shell">
       <aside className="sidebar">
         <div>
-          <div className="brand">AppBoutique</div>
-          <p className="muted">Gestion d'epicerie moderne</p>
+          <div className="brand">Alimentation les Deux Frères</div>
+          <p className="muted">Gestion d'alimentation moderne</p>
         </div>
         <nav className="nav">
           {navItems.map((item) => (

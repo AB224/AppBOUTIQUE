@@ -103,7 +103,7 @@ export function LoginPage() {
   return (
     <div className="login-screen">
       <div className="login-panel login-wide">
-        <h1>Boutique alimentaire</h1>
+        <h1>Alimentation les Deux Frères</h1>
         <p>Connexion Google puis validation par code envoye par email.</p>
 
         <div className="login-grid">
