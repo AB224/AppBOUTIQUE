@@ -40,6 +40,32 @@ const rowsToObjects = (rows) => {
   );
 };
 
+const getImportRows = (workbook) => {
+  if (!Array.isArray(workbook)) {
+    return [];
+  }
+
+  if (workbook[0]?.data) {
+    const importableSheets = workbook.filter((sheet) => {
+      const rows = rowsToObjects(sheet.data || []);
+      return rows.some((row) => {
+        const name = getCell(row, ["nom", "name", "produit", "Produit"]);
+        const barcode = getCell(row, ["code_barres", "barcode", "Code-barres", "Code barres"]);
+        const quantity = getCell(row, ["quantite", "quantity", "Quantite"]);
+        const stock = getCell(row, ["stock_actuel", "stock", "Stock"]);
+        return (name || barcode) && (quantity !== "" || stock !== "");
+      });
+    });
+    const importSheet =
+      importableSheets.find((sheet) => String(sheet.sheet || "").toLowerCase().includes("modele import")) ||
+      importableSheets.find((sheet) => String(sheet.sheet || "").toLowerCase().includes("stock")) ||
+      importableSheets[0];
+    return importSheet?.data || [];
+  }
+
+  return workbook;
+};
+
 const buildWorkbookBuffer = (sheets) =>
   writeXlsxFile(
     sheets.map((sheet) => ({ sheet: sheet.name, data: sheet.data })),
@@ -168,7 +194,19 @@ router.post(
       throw new Error("Fichier Excel manquant");
     }
 
-    const rows = rowsToObjects(await readXlsxFile(req.file.buffer, { sheet: 1 }));
+    let workbook;
+    try {
+      workbook = await readXlsxFile(req.file.buffer, { getSheets: true });
+    } catch (error) {
+      res.status(400);
+      throw new Error("Fichier Excel illisible. Exporte le modele depuis l'onglet Stocks puis reimporte un fichier .xlsx.");
+    }
+
+    const rows = rowsToObjects(getImportRows(workbook));
+    if (!rows.length) {
+      res.status(400);
+      throw new Error("Aucune ligne importable. Utilise les colonnes code_barres, nom, quantite ou stock_actuel.");
+    }
     if (rows.length > 1000) {
       res.status(400);
       throw new Error("Import limite a 1000 lignes par fichier");
@@ -180,8 +218,9 @@ router.post(
     for (const row of rows) {
       const barcode = String(getCell(row, ["code_barres", "barcode", "Code-barres", "Code barres"])).trim();
       const name = String(getCell(row, ["nom", "name", "produit", "Produit"])).trim();
-      const quantity = toNumber(getCell(row, ["quantite", "quantity", "Quantite"], 0));
-      if (!quantity || (!barcode && !name)) {
+      const quantityValue = getCell(row, ["quantite", "quantity", "Quantite"], "");
+      const targetStockValue = getCell(row, ["stock_actuel", "stock", "Stock"], "");
+      if (!barcode && !name) {
         skipped += 1;
         continue;
       }
@@ -192,7 +231,14 @@ router.post(
         continue;
       }
 
-      const type = normalizeMovementType(getCell(row, ["type", "Type"], "restock"));
+      const hasQuantity = quantityValue !== "";
+      const quantity = hasQuantity ? toNumber(quantityValue, 0) : toNumber(targetStockValue, product.stock) - product.stock;
+      if (!quantity) {
+        skipped += 1;
+        continue;
+      }
+
+      const type = hasQuantity ? normalizeMovementType(getCell(row, ["type", "Type"], "restock")) : "adjustment";
       product.stock += quantity;
       if (product.stock < 0) {
         product.stock = 0;
