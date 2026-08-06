@@ -289,6 +289,7 @@ img {
   background: rgba(255, 255, 255, 0.38);
 }
 
+.ref-badge,
 .tag,
 .stock-badge {
   display: inline-flex;
@@ -298,6 +299,13 @@ img {
   padding: 6px 10px;
   border-radius: 999px;
   font-weight: 800;
+}
+
+.ref-badge {
+  min-width: 78px;
+  background: rgba(47, 93, 138, 0.12);
+  color: var(--blue);
+  letter-spacing: 0.04em;
 }
 
 .tag {

@@ -4,7 +4,7 @@ const multer = require("multer");
 const readXlsxFile = require("read-excel-file/node");
 const writeXlsxFile = require("write-excel-file/node");
 const Product = require("../models/Product");
-const { protect } = require("../middleware/authMiddleware");
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 const validateObjectId = require("../middleware/validateObjectId");
 
 const router = express.Router();
@@ -19,6 +19,18 @@ const upload = multer({
   }
 });
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const productReferenceRegex = /^H\d{5}$/;
+
+const formatProductReference = (number) => `H${String(number).padStart(5, "0")}`;
+
+const getNextProductReference = async () => {
+  const products = await Product.find({ barcode: productReferenceRegex }).select("barcode").lean();
+  const maxReference = products.reduce((max, product) => {
+    const value = Number(String(product.barcode || "").slice(1));
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 0);
+  return formatProductReference(maxReference + 1);
+};
 
 const getCell = (row, keys, fallback = "") => {
   const key = keys.find((item) => row[item] !== undefined && row[item] !== null && row[item] !== "");
@@ -48,6 +60,7 @@ const rowsToObjects = (rows) => {
 
 const objectsToWorkbook = (rows) => {
   const headers = Object.keys(rows[0] || {
+    ref: "",
     nom: "",
     categorie: "",
     prix_achat: "",
@@ -90,6 +103,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const products = await Product.find().sort({ name: 1 });
     const rows = products.map((product) => ({
+      ref: product.barcode,
       nom: product.name,
       categorie: product.category,
       prix_achat: product.purchasePrice,
@@ -125,18 +139,19 @@ router.post(
       const name = String(getCell(row, ["nom", "name", "Nom", "Name"])).trim();
       if (!name) continue;
 
-      const barcode = String(getCell(row, ["code_barres", "barcode", "Code-barres", "Code barres"])).trim();
+      const providedReference = String(
+        getCell(row, ["ref", "Ref", "reference", "Reference", "Reference intrant", "Référence intrant", "code_barres", "barcode", "Code-barres", "Code barres"])
+      ).trim();
+      const existing = await Product.findOne(providedReference ? { barcode: providedReference } : { name });
       const payload = {
         name,
         category: String(getCell(row, ["categorie", "category", "Categorie", "Catégorie"], "General")).trim(),
         purchasePrice: toNumber(getCell(row, ["prix_achat", "purchasePrice", "Prix achat"], 0)),
         salePrice: toNumber(getCell(row, ["prix_vente", "salePrice", "Prix vente"], 0)),
         stock: toNumber(getCell(row, ["stock", "Stock"], 0)),
-        barcode,
+        barcode: providedReference || existing?.barcode || (await getNextProductReference()),
         lowStockAlert: toNumber(getCell(row, ["alerte_stock_faible", "lowStockAlert", "Alerte"], 5), 5)
       };
-      const query = barcode ? { barcode } : { name };
-      const existing = await Product.findOne(query);
       if (existing) {
         await Product.findByIdAndUpdate(existing._id, payload, { runValidators: true });
         updated += 1;
@@ -154,8 +169,29 @@ router.post(
   "/",
   protect,
   asyncHandler(async (req, res) => {
-    const product = await Product.create(req.body);
+    const product = await Product.create({
+      ...req.body,
+      barcode: String(req.body.barcode || "").trim() || (await getNextProductReference())
+    });
     res.status(201).json(product);
+  })
+);
+
+router.post(
+  "/assign-references",
+  protect,
+  adminOnly,
+  asyncHandler(async (req, res) => {
+    const products = await Product.find().sort({ createdAt: 1, _id: 1 });
+    let index = 1;
+
+    for (const product of products) {
+      product.barcode = formatProductReference(index);
+      await product.save();
+      index += 1;
+    }
+
+    res.json({ updated: products.length, firstReference: products.length ? "H00001" : null, lastReference: products.length ? formatProductReference(products.length) : null });
   })
 );
 
@@ -164,7 +200,14 @@ router.put(
   protect,
   validateObjectId(),
   asyncHandler(async (req, res) => {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...req.body,
+        barcode: String(req.body.barcode || "").trim() || (await getNextProductReference())
+      },
+      { new: true, runValidators: true }
+    );
     if (!product) {
       res.status(404);
       throw new Error("Produit introuvable");

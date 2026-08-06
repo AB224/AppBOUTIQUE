@@ -18,7 +18,7 @@ const productFields = [
   { key: "purchasePrice", label: "Prix d'achat", type: "number" },
   { key: "salePrice", label: "Prix de vente", type: "number" },
   { key: "stock", label: "Stock actuel", type: "number" },
-  { key: "barcode", label: "Code-barres ou reference", placeholder: "Optionnel" },
+  { key: "barcode", label: "Reference produit", placeholder: "Automatique : H00001" },
   { key: "lowStockAlert", label: "Seuil d'alerte stock", type: "number" }
 ];
 
@@ -198,6 +198,7 @@ export function ProductsPage() {
             <table className="product-table">
               <thead>
                 <tr>
+                  <th>Ref</th>
                   <th>Nom</th>
                   <th>Categorie</th>
                   <th>Prix vente</th>
@@ -210,8 +211,10 @@ export function ProductsPage() {
                 {filteredProducts.map((product) => (
                   <tr key={product._id}>
                     <td>
+                      <span className="ref-badge">{product.barcode || "-"}</span>
+                    </td>
+                    <td>
                       <strong>{product.name}</strong>
-                      {product.barcode ? <div className="muted">Ref: {product.barcode}</div> : null}
                     </td>
                     <td>
                       <span className="tag">{product.category}</span>
