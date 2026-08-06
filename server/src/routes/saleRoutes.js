@@ -8,7 +8,31 @@ const mongoose = require("mongoose");
 
 const router = express.Router();
 
-const createTicketNumber = () => `TCK-${Date.now()}`;
+const formatTicketDate = (date = new Date()) => {
+  const year = String(date.getFullYear()).slice(-2);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+};
+
+const createTicketNumber = async () => {
+  const prefix = `TCK-${formatTicketDate()}-`;
+  const lastSale = await Sale.findOne({ ticketNumber: { $regex: `^${prefix}` } }).sort({ ticketNumber: -1 });
+  const lastSequence = Number(lastSale?.ticketNumber?.split("-").pop() || 0);
+  return `${prefix}${String(lastSequence + 1).padStart(4, "0")}`;
+};
+
+const createSaleWithTicket = async (payload) => {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await Sale.create({ ...payload, ticketNumber: await createTicketNumber() });
+    } catch (error) {
+      if (error?.code !== 11000 || attempt === 2) {
+        throw error;
+      }
+    }
+  }
+};
 
 router.get(
   "/",
@@ -81,14 +105,13 @@ router.post(
       });
     }
 
-    const sale = await Sale.create({
+    const sale = await createSaleWithTicket({
       customer: customer || null,
       items: saleItems,
       subtotal,
       total: subtotal,
       paymentMethod,
-      cashier: req.user._id,
-      ticketNumber: createTicketNumber()
+      cashier: req.user._id
     });
 
     const populated = await Sale.findById(sale._id)
