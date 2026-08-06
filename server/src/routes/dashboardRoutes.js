@@ -64,17 +64,27 @@ router.get(
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
 
+    const grossRevenue = {
+      day: sumSales(daySales),
+      week: sumSales(weekSales),
+      month: sumSales(monthSales)
+    };
+    const refunds = {
+      day: sumMovements(dayRefunds),
+      week: sumMovements(weekRefunds),
+      month: sumMovements(monthRefunds)
+    };
+    const netRevenue = {
+      day: grossRevenue.day - refunds.day,
+      week: grossRevenue.week - refunds.week,
+      month: grossRevenue.month - refunds.month
+    };
+
     res.json({
-      revenue: {
-        day: sumSales(daySales),
-        week: sumSales(weekSales),
-        month: sumSales(monthSales)
-      },
-      refunds: {
-        day: sumMovements(dayRefunds),
-        week: sumMovements(weekRefunds),
-        month: sumMovements(monthRefunds)
-      },
+      revenue: netRevenue,
+      grossRevenue,
+      refunds,
+      netRevenue,
       stats: {
         salesCount: sales.length,
         productsCount: products.length,

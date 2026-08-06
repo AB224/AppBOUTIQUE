@@ -21,14 +21,14 @@ export function DashboardPage() {
       <section className="hero card">
         <div>
           <h1>Pilotage de la boutique</h1>
-          <p>Vue rapide du chiffre d'affaires, des meilleures ventes et des alertes de stock.</p>
+          <p>Vue rapide du chiffre d'affaires net, des decaissements et des alertes de stock.</p>
         </div>
       </section>
 
       <section className="stats-grid">
-        <StatCard title="CA du jour" value={formatCurrency(data.revenue.day)} accent="green" />
-        <StatCard title="CA sur 7 jours" value={formatCurrency(data.revenue.week)} accent="orange" />
-        <StatCard title="CA sur 30 jours" value={formatCurrency(data.revenue.month)} accent="blue" />
+        <StatCard title="CA net du jour" value={formatCurrency(data.netRevenue?.day ?? data.revenue.day)} accent="green" />
+        <StatCard title="CA net sur 7 jours" value={formatCurrency(data.netRevenue?.week ?? data.revenue.week)} accent="orange" />
+        <StatCard title="CA net sur 30 jours" value={formatCurrency(data.netRevenue?.month ?? data.revenue.month)} accent="blue" />
         <StatCard title="Decaissements jour" value={formatCurrency(data.refunds?.day)} accent="red" />
         <StatCard title="Alertes stock" value={data.stats.lowStockCount} accent="red" />
       </section>
@@ -51,6 +51,14 @@ export function DashboardPage() {
             <div className="list-row">
               <span>Nombre de ventes</span>
               <strong>{data.stats.salesCount}</strong>
+            </div>
+            <div className="list-row">
+              <span>CA brut du jour</span>
+              <strong>{formatCurrency(data.grossRevenue?.day ?? data.revenue.day)}</strong>
+            </div>
+            <div className="list-row">
+              <span>CA brut sur 30 jours</span>
+              <strong>{formatCurrency(data.grossRevenue?.month ?? data.revenue.month)}</strong>
             </div>
             <div className="list-row">
               <span>Produits references</span>
