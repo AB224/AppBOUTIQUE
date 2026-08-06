@@ -80,7 +80,7 @@ const objectsToWorkbook = (rows) => {
       ...rows.map((row) => headers.map((header) => ({ value: row[header] ?? "" })))
     ],
     { buffer: true }
-  );
+  ).toBuffer();
 };
 
 const buildInvoicePayload = (body) => {

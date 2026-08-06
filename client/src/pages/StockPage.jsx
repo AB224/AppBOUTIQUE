@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
-import { api } from "../services/api";
+import { api, downloadBlob } from "../services/api";
 
 export function StockPage() {
   const [products, setProducts] = useState([]);
   const [movements, setMovements] = useState([]);
   const [restock, setRestock] = useState({ productId: "", quantity: 1, note: "" });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const load = async () => {
-    const [productsData, movementsData] = await Promise.all([api("/products"), api("/stocks/movements")]);
-    setProducts(productsData);
-    setMovements(movementsData);
+    try {
+      const [productsData, movementsData] = await Promise.all([api("/products"), api("/stocks/movements")]);
+      setProducts(productsData);
+      setMovements(movementsData);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   useEffect(() => {
@@ -18,17 +24,65 @@ export function StockPage() {
 
   const submit = async (event) => {
     event.preventDefault();
-    await api("/stocks/restock", { method: "POST", body: restock });
-    setRestock({ productId: "", quantity: 1, note: "" });
-    load();
+    try {
+      setError("");
+      setMessage("");
+      await api("/stocks/restock", { method: "POST", body: restock });
+      setRestock({ productId: "", quantity: 1, note: "" });
+      setMessage("Stock ajoute avec succes.");
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const exportExcel = async () => {
+    try {
+      setError("");
+      const blob = await api("/stocks/export/excel");
+      downloadBlob(blob, "stock-appboutique.xlsx");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const importExcel = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      setError("");
+      setMessage("");
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await api("/stocks/import/excel", { method: "POST", body: formData });
+      setMessage(`Import termine : ${result.imported} mouvement(s), ${result.skipped} ligne(s) ignoree(s).`);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (
     <div className="stack">
       <div className="page-header">
-        <h1>Stocks</h1>
-        <p>Mise a jour manuelle et historique des mouvements.</p>
+        <div>
+          <h1>Stocks</h1>
+          <p>Mise a jour manuelle, import/export Excel et historique des mouvements.</p>
+        </div>
+        <div className="actions">
+          <label className="ghost file-action">
+            Importer Excel
+            <input type="file" accept=".xlsx,.xls" onChange={importExcel} />
+          </label>
+          <button type="button" className="primary" onClick={exportExcel}>
+            Exporter Excel
+          </button>
+        </div>
       </div>
+      {message ? <div className="alert success">{message}</div> : null}
+      {error ? <div className="alert error">{error}</div> : null}
       <section className="content-grid">
         <form className="card form-grid" onSubmit={submit}>
           <h2>Ajouter du stock</h2>

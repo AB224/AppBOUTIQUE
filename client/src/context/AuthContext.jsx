@@ -56,6 +56,16 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setToken(null);
+      setUser(null);
+    };
+
+    window.addEventListener("appboutique:auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("appboutique:auth-expired", handleAuthExpired);
+  }, []);
+
   const login = async (email, password, totpCode) => {
     const response = await api("/auth/login", { method: "POST", body: { email, password, totpCode } });
     setToken(response.token);
