@@ -28,6 +28,13 @@ function PrivateApp() {
 }
 
 export default function App() {
-  const { token } = useAuth();
+  const { token, authReady } = useAuth();
+  if (!authReady) {
+    return (
+      <div className="login-screen">
+        <div className="login-panel">Verification de la session...</div>
+      </div>
+    );
+  }
   return token ? <PrivateApp /> : <LoginPage />;
 }

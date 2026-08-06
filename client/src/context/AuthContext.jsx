@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
     const raw = localStorage.getItem("user");
     return raw ? JSON.parse(raw) : null;
   });
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -25,6 +26,35 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("user");
     }
   }, [user]);
+
+  useEffect(() => {
+    let active = true;
+
+    const verifySession = async () => {
+      if (!localStorage.getItem("token")) {
+        if (active) setAuthReady(true);
+        return;
+      }
+
+      try {
+        const data = await api("/auth/me");
+        if (!active) return;
+        setUser(data);
+      } catch (error) {
+        if (!active) return;
+        setToken(null);
+        setUser(null);
+      } finally {
+        if (active) setAuthReady(true);
+      }
+    };
+
+    verifySession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const login = async (email, password, totpCode) => {
     const response = await api("/auth/login", { method: "POST", body: { email, password, totpCode } });
@@ -58,7 +88,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ token, user, login, logout, refreshUser, setUser, requestGoogleCode, verifyGoogleCode }}
+      value={{ token, user, authReady, login, logout, refreshUser, setUser, requestGoogleCode, verifyGoogleCode }}
     >
       {children}
     </AuthContext.Provider>
