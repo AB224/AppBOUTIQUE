@@ -59,9 +59,21 @@ function normalizeKey(value) {
     .replace(/^_+|_+$/g, "");
 }
 
+const isImportHeaderRow = (row = []) => {
+  const headers = row.map(normalizeKey);
+  const hasReference = headers.some((header) => ["reference_intrant", "code_barres", "barcode"].includes(header));
+  const hasName = headers.some((header) => ["libelle_intrant", "nom", "name", "produit"].includes(header));
+  const hasStock = headers.some((header) =>
+    ["stock_a_jour", "stock_actuel", "stock", "quantite", "quantity", "somme_des_entrees_achats"].includes(header)
+  );
+  return (hasReference || hasName) && hasStock;
+};
+
 const rowsToObjects = (rows) => {
-  const headers = (rows[0] || []).map((header) => String(header || "").trim());
-  return rows.slice(1).map((row) =>
+  const headerIndex = rows.findIndex((row, index) => index < 15 && isImportHeaderRow(row));
+  const startIndex = headerIndex >= 0 ? headerIndex : 0;
+  const headers = (rows[startIndex] || []).map((header) => String(header || "").trim());
+  return rows.slice(startIndex + 1).map((row) =>
     headers.reduce((item, header, index) => {
       if (header) item[header] = row[index] ?? "";
       return item;
@@ -78,10 +90,10 @@ const getImportRows = (workbook) => {
     const importableSheets = workbook.filter((sheet) => {
       const rows = rowsToObjects(sheet.data || []);
       return rows.some((row) => {
-        const name = getCell(row, ["nom", "name", "produit", "Produit"]);
-        const barcode = getCell(row, ["code_barres", "barcode", "Code-barres", "Code barres"]);
-        const quantity = getCell(row, ["quantite", "quantity", "Quantite"]);
-        const stock = getCell(row, ["stock_actuel", "stock", "Stock"]);
+        const name = getCell(row, ["nom", "name", "produit", "Produit", "libelle_intrant", "Libelle intrant"]);
+        const barcode = getCell(row, ["code_barres", "barcode", "Code-barres", "Code barres", "reference_intrant", "Reference intrant"]);
+        const quantity = getCell(row, ["quantite", "quantity", "Quantite", "somme_des_entrees_achats", "Somme des entrees achats"]);
+        const stock = getCell(row, ["stock_actuel", "stock_a_jour", "stock", "Stock", "Stock a jour"]);
         return (name || barcode) && (quantity !== "" || stock !== "");
       });
     });
