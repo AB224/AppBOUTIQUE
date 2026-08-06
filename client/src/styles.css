@@ -121,6 +121,7 @@ img {
 
 .content-grid {
   grid-template-columns: 1fr 1.4fr;
+  align-items: start;
 }
 
 .stat-card strong {
@@ -177,6 +178,10 @@ img {
   margin: 4px 0 0;
 }
 
+.section-title.compact {
+  margin-bottom: 8px;
+}
+
 .eyebrow {
   color: var(--green);
   font-size: 0.78rem;
@@ -215,6 +220,101 @@ img {
 .block {
   display: block;
   margin-top: 4px;
+}
+
+.product-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.mini-stat {
+  min-height: 110px;
+  display: grid;
+  align-content: center;
+}
+
+.mini-stat strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.55rem;
+}
+
+.product-layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(620px, 1.5fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.product-form-card,
+.product-catalog-card {
+  overflow: hidden;
+}
+
+.product-form-card {
+  position: sticky;
+  top: 24px;
+}
+
+.form-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.span-2 {
+  grid-column: 1 / -1;
+}
+
+.catalog-search {
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.product-table th {
+  color: var(--muted);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.product-table tbody tr {
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.product-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.tag,
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.tag {
+  background: #efe4d2;
+  color: var(--muted);
+}
+
+.stock-badge {
+  min-width: 44px;
+  background: #e4f2e8;
+  color: var(--green);
+}
+
+.empty-state {
+  padding: 28px;
+  text-align: center;
+  color: var(--muted);
 }
 
 @keyframes panel-in {
@@ -547,6 +647,8 @@ td {
   .content-grid,
   .stats-grid,
   .dashboard-detail-grid,
+  .product-summary-grid,
+  .product-layout,
   .pos-layout,
   .login-grid {
     grid-template-columns: 1fr;
@@ -575,6 +677,14 @@ td {
     flex-direction: column;
   }
 
+  .product-form-card {
+    position: static;
+  }
+
+  .catalog-search {
+    max-width: none;
+  }
+
   .credit-hero,
   .credit-row {
     grid-template-columns: 1fr;
@@ -586,5 +696,9 @@ td {
 
   .credit-actions {
     justify-content: start;
+  }
+
+  .form-two-columns {
+    grid-template-columns: 1fr;
   }
 }
