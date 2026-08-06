@@ -142,11 +142,26 @@ export function DashboardPage() {
   const activeCard = dashboardCards.find((card) => card.id === activePanel);
 
   return (
-    <div className="stack">
-      <section className="hero card">
+    <div className="stack dashboard-stack">
+      <section className="hero card dashboard-hero">
         <div>
+          <span className="eyebrow hero-eyebrow">Tableau de bord</span>
           <h1>Alimentation les Deux Frères</h1>
           <p>Pilotage interactif du chiffre d'affaires net, des decaissements et des alertes de stock.</p>
+        </div>
+        <div className="hero-metrics">
+          <div>
+            <span>CA net 30 jours</span>
+            <strong>{formatCurrency(netRevenue.month)}</strong>
+          </div>
+          <div>
+            <span>Ventes</span>
+            <strong>{data.stats.salesCount}</strong>
+          </div>
+          <div>
+            <span>Produits</span>
+            <strong>{data.stats.productsCount}</strong>
+          </div>
         </div>
       </section>
 
@@ -175,20 +190,37 @@ export function DashboardPage() {
         {renderActivePanel()}
       </section>
 
-      <section className="content-grid">
-        <div className="card">
-          <h2>Produits les plus vendus</h2>
+      <section className="content-grid dashboard-main-grid">
+        <div className="card dashboard-list-card">
+          <div className="section-title compact">
+            <div>
+              <span className="eyebrow">Ventes</span>
+              <h2>Produits les plus vendus</h2>
+            </div>
+          </div>
           <div className="list">
-            {data.topProducts.map((item) => (
-              <div key={item.name} className="list-row">
-                <span>{item.name}</span>
-                <strong>{item.quantity}</strong>
-              </div>
-            ))}
+            {data.topProducts.length ? (
+              data.topProducts.map((item, index) => (
+                <div key={item.name} className="list-row highlight-row">
+                  <span>
+                    <small className="rank-badge">{index + 1}</small>
+                    {item.name}
+                  </span>
+                  <strong>{item.quantity}</strong>
+                </div>
+              ))
+            ) : (
+              <span className="muted">Aucune vente enregistree pour le moment.</span>
+            )}
           </div>
         </div>
-        <div className="card">
-          <h2>Statistiques</h2>
+        <div className="card dashboard-list-card">
+          <div className="section-title compact">
+            <div>
+              <span className="eyebrow">Synthese</span>
+              <h2>Statistiques</h2>
+            </div>
+          </div>
           <div className="list">
             <div className="list-row">
               <span>Nombre de ventes</span>
@@ -218,8 +250,14 @@ export function DashboardPage() {
         </div>
       </section>
 
-      <section className="card">
-        <h2>Produits decaisses</h2>
+      <section className="card dashboard-list-card dashboard-wide-card">
+        <div className="section-title compact">
+          <div>
+            <span className="eyebrow">Retours</span>
+            <h2>Produits decaisses</h2>
+          </div>
+          <span className="detail-chip">{data.refundedProducts?.length || 0} mouvement(s)</span>
+        </div>
         <div className="list">
           {data.refundedProducts?.length ? (
             data.refundedProducts.map((item) => (
