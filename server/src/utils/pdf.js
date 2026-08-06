@@ -1,5 +1,12 @@
 const PDFDocument = require("pdfkit");
 
+const formatCurrency = (value) =>
+  new Intl.NumberFormat("fr-GN", {
+    style: "currency",
+    currency: "GNF",
+    maximumFractionDigits: 0
+  }).format(Number(value || 0));
+
 const generateInvoicePdfBuffer = (invoice, customer) =>
   new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 });
@@ -28,14 +35,14 @@ const generateInvoicePdfBuffer = (invoice, customer) =>
       doc
         .fontSize(11)
         .text(
-          `${item.description} | Qt: ${item.quantity} | PU: ${item.unitPrice.toFixed(2)} EUR | Total: ${item.total.toFixed(2)} EUR`
+          `${item.description} | Qt: ${item.quantity} | PU: ${formatCurrency(item.unitPrice)} | Total: ${formatCurrency(item.total)}`
         );
     });
 
     doc.moveDown();
-    doc.fontSize(12).text(`Sous-total: ${invoice.subtotal.toFixed(2)} EUR`, { align: "right" });
-    doc.text(`Taxes: ${invoice.tax.toFixed(2)} EUR`, { align: "right" });
-    doc.fontSize(15).text(`Total: ${invoice.total.toFixed(2)} EUR`, { align: "right" });
+    doc.fontSize(12).text(`Sous-total: ${formatCurrency(invoice.subtotal)}`, { align: "right" });
+    doc.text(`Taxes: ${formatCurrency(invoice.tax)}`, { align: "right" });
+    doc.fontSize(15).text(`Total: ${formatCurrency(invoice.total)}`, { align: "right" });
     doc.moveDown(2);
     doc.fontSize(10).fillColor("#666").text("Merci pour votre confiance.", { align: "center" });
     doc.end();

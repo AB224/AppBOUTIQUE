@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, downloadBlob } from "../services/api";
+import { formatCurrency } from "../utils/currency";
 
 const emptyInvoice = {
   type: "sale",
@@ -195,7 +196,7 @@ export function InvoicesPage() {
                     {invoice.type === "purchase" ? "Achat" : "Vente"} - {invoice.customer?.name}
                   </div>
                 </div>
-                <span>{invoice.total.toFixed(2)} EUR</span>
+                <span>{formatCurrency(invoice.total)}</span>
                 <div className="actions">
                   <button type="button" className="ghost" onClick={() => openPdf(invoice._id)}>
                     PDF

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, downloadBlob } from "../services/api";
+import { formatCurrency } from "../utils/currency";
 
 const emptyForm = {
   name: "",
@@ -136,7 +137,7 @@ export function ProductsPage() {
                   <tr key={product._id}>
                     <td>{product.name}</td>
                     <td>{product.category}</td>
-                    <td>{product.salePrice.toFixed(2)} EUR</td>
+                    <td>{formatCurrency(product.salePrice)}</td>
                     <td className={product.stock <= product.lowStockAlert ? "danger-text" : ""}>{product.stock}</td>
                     <td>{product.lowStockAlert}</td>
                     <td className="actions">

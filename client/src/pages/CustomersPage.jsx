@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
+import { formatCurrency } from "../utils/currency";
 
 const emptyCustomer = { name: "", phone: "", email: "" };
 const emptyCredit = { reference: "", description: "", amount: "" };
 
-const formatCurrency = (value) => `${Number(value || 0).toFixed(2)} EUR`;
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString("fr-FR") : "-");
 
 export function CustomersPage() {
@@ -68,7 +68,7 @@ export function CustomersPage() {
     setMessage("");
     const amount = Number(creditForm.amount);
     if (!amount || amount <= 0) {
-      setError("Saisis un montant de creance superieur a 0 EUR.");
+      setError("Saisis un montant de creance superieur a 0 GNF.");
       return;
     }
     try {
@@ -97,7 +97,7 @@ export function CustomersPage() {
   const registerPayment = async (creditId) => {
     const paidAmount = Number(paymentByCredit[creditId] || 0);
     if (!paidAmount || paidAmount <= 0) {
-      setError("Saisis un montant paye superieur a 0 EUR.");
+      setError("Saisis un montant paye superieur a 0 GNF.");
       return;
     }
     try {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import { StatCard } from "../components/StatCard";
+import { formatCurrency } from "../utils/currency";
 
 export function DashboardPage() {
   const [data, setData] = useState(null);
@@ -25,9 +26,9 @@ export function DashboardPage() {
       </section>
 
       <section className="stats-grid">
-        <StatCard title="CA du jour" value={`${data.revenue.day.toFixed(2)} EUR`} accent="green" />
-        <StatCard title="CA sur 7 jours" value={`${data.revenue.week.toFixed(2)} EUR`} accent="orange" />
-        <StatCard title="CA sur 30 jours" value={`${data.revenue.month.toFixed(2)} EUR`} accent="blue" />
+        <StatCard title="CA du jour" value={formatCurrency(data.revenue.day)} accent="green" />
+        <StatCard title="CA sur 7 jours" value={formatCurrency(data.revenue.week)} accent="orange" />
+        <StatCard title="CA sur 30 jours" value={formatCurrency(data.revenue.month)} accent="blue" />
         <StatCard title="Alertes stock" value={data.stats.lowStockCount} accent="red" />
       </section>
 

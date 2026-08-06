@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
+import { formatCurrency } from "../utils/currency";
 
 const printTicket = (sale) => {
   const ticketWindow = window.open("", "_blank", "width=360,height=640");
   if (!ticketWindow) return;
 
   const items = sale.items
-    .map((item) => `<div style="display:flex;justify-content:space-between;margin:6px 0;"><span>${item.name} x${item.quantity}</span><strong>${item.total.toFixed(2)} EUR</strong></div>`)
+    .map((item) => `<div style="display:flex;justify-content:space-between;margin:6px 0;"><span>${item.name} x${item.quantity}</span><strong>${formatCurrency(item.total)}</strong></div>`)
     .join("");
 
   ticketWindow.document.write(`
@@ -19,7 +20,7 @@ const printTicket = (sale) => {
         <hr />
         ${items}
         <hr />
-        <div style="display:flex;justify-content:space-between;font-size:18px;"><span>Total</span><strong>${sale.total.toFixed(2)} EUR</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:18px;"><span>Total</span><strong>${formatCurrency(sale.total)}</strong></div>
         <div style="margin-top:12px;">Paiement: ${sale.paymentMethod === "cash" ? "Especes" : "Carte"}</div>
         <div style="margin-top:18px;text-align:center;">Merci et a bientot</div>
       </body>
@@ -96,7 +97,7 @@ export function PosPage() {
       items: cart.map((item) => ({ product: item.product, quantity: item.quantity }))
     };
     const sale = await api("/sales", { method: "POST", body: payload });
-    setMessage(`Ticket ${sale.ticketNumber} genere pour ${sale.total.toFixed(2)} EUR`);
+    setMessage(`Ticket ${sale.ticketNumber} genere pour ${formatCurrency(sale.total)}`);
     printTicket(sale);
     setCart([]);
     setCustomer("");
@@ -108,7 +109,7 @@ export function PosPage() {
   const submitRefund = async (event) => {
     event.preventDefault();
     const movement = await api("/cash/returns", { method: "POST", body: refundForm });
-    setMessage(`Decaissement retour enregistre : ${movement.amount.toFixed(2)} EUR`);
+    setMessage(`Decaissement retour enregistre : ${formatCurrency(movement.amount)}`);
     setRefundForm({
       productId: "",
       productReference: "",
@@ -149,7 +150,7 @@ export function PosPage() {
                 disabled={product.stock <= 0}
               >
                 <strong>{product.name}</strong>
-                <span>{product.salePrice.toFixed(2)} EUR</span>
+                <span>{formatCurrency(product.salePrice)}</span>
                 <small>Stock {product.stock}</small>
               </button>
             ))}
@@ -164,7 +165,7 @@ export function PosPage() {
                 <div className="list-row" key={item.product}>
                   <div>
                     <strong>{item.name}</strong>
-                    <div className="muted">{item.price.toFixed(2)} EUR</div>
+                    <div className="muted">{formatCurrency(item.price)}</div>
                   </div>
                   <input
                     className="qty-input"
@@ -209,7 +210,7 @@ export function PosPage() {
 
           <div className="total-box">
             <span>Total</span>
-            <strong>{total.toFixed(2)} EUR</strong>
+            <strong>{formatCurrency(total)}</strong>
           </div>
 
           <button className="primary xl" disabled={!cart.length} onClick={checkout}>
@@ -337,7 +338,7 @@ export function PosPage() {
                       {movement.productReference ? <div className="muted">Ref: {movement.productReference}</div> : null}
                     </td>
                     <td>{movement.reason}</td>
-                    <td className="danger-text">-{movement.amount.toFixed(2)} EUR</td>
+                    <td className="danger-text">-{formatCurrency(movement.amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -366,7 +367,7 @@ export function PosPage() {
                   <td>{new Date(sale.createdAt).toLocaleString("fr-FR")}</td>
                   <td>{sale.customer?.name || "-"}</td>
                   <td>{sale.paymentMethod === "cash" ? "Especes" : "Carte"}</td>
-                  <td>{sale.total.toFixed(2)} EUR</td>
+                  <td>{formatCurrency(sale.total)}</td>
                 </tr>
               ))}
             </tbody>
