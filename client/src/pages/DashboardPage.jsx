@@ -29,6 +29,7 @@ export function DashboardPage() {
         <StatCard title="CA du jour" value={formatCurrency(data.revenue.day)} accent="green" />
         <StatCard title="CA sur 7 jours" value={formatCurrency(data.revenue.week)} accent="orange" />
         <StatCard title="CA sur 30 jours" value={formatCurrency(data.revenue.month)} accent="blue" />
+        <StatCard title="Decaissements jour" value={formatCurrency(data.refunds?.day)} accent="red" />
         <StatCard title="Alertes stock" value={data.stats.lowStockCount} accent="red" />
       </section>
 
@@ -55,7 +56,39 @@ export function DashboardPage() {
               <span>Produits references</span>
               <strong>{data.stats.productsCount}</strong>
             </div>
+            <div className="list-row">
+              <span>Retours/decaiss. sur 30 jours</span>
+              <strong>{data.stats.refundCount}</strong>
+            </div>
+            <div className="list-row">
+              <span>Total decaisse sur 30 jours</span>
+              <strong>{formatCurrency(data.refunds?.month)}</strong>
+            </div>
           </div>
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>Produits decaisses</h2>
+        <div className="list">
+          {data.refundedProducts?.length ? (
+            data.refundedProducts.map((item) => (
+              <div key={item._id} className="list-row card-inline">
+                <div>
+                  <strong>{item.productName}</strong>
+                  <div className="muted">
+                    {item.productReference ? `Ref: ${item.productReference} - ` : ""}
+                    {new Date(item.createdAt).toLocaleString("fr-FR")}
+                  </div>
+                  <div className="muted">{item.reason}</div>
+                </div>
+                <span>Qt {item.quantity}</span>
+                <strong className="danger-text">-{formatCurrency(item.amount)}</strong>
+              </div>
+            ))
+          ) : (
+            <span className="muted">Aucun produit decaisse pour le moment.</span>
+          )}
         </div>
       </section>
     </div>

@@ -2,11 +2,13 @@ const express = require("express");
 const asyncHandler = require("express-async-handler");
 const Sale = require("../models/Sale");
 const Product = require("../models/Product");
+const CashMovement = require("../models/CashMovement");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 const sumSales = (sales) => sales.reduce((sum, sale) => sum + sale.total, 0);
+const sumMovements = (movements) => movements.reduce((sum, movement) => sum + movement.amount, 0);
 
 router.get(
   "/",
@@ -22,12 +24,29 @@ router.get(
     const startOfMonth = new Date(now);
     startOfMonth.setMonth(now.getMonth() - 1);
 
-    const [daySales, weekSales, monthSales, sales, products] = await Promise.all([
+    const [
+      daySales,
+      weekSales,
+      monthSales,
+      sales,
+      products,
+      dayRefunds,
+      weekRefunds,
+      monthRefunds,
+      recentRefunds
+    ] = await Promise.all([
       Sale.find({ createdAt: { $gte: startOfDay } }),
       Sale.find({ createdAt: { $gte: startOfWeek } }),
       Sale.find({ createdAt: { $gte: startOfMonth } }),
       Sale.find(),
-      Product.find()
+      Product.find(),
+      CashMovement.find({ type: "return_refund", createdAt: { $gte: startOfDay } }),
+      CashMovement.find({ type: "return_refund", createdAt: { $gte: startOfWeek } }),
+      CashMovement.find({ type: "return_refund", createdAt: { $gte: startOfMonth } }),
+      CashMovement.find({ type: "return_refund" })
+        .populate("product", "name category barcode")
+        .sort({ createdAt: -1 })
+        .limit(8)
     ]);
 
     const topProductsMap = {};
@@ -51,12 +70,28 @@ router.get(
         week: sumSales(weekSales),
         month: sumSales(monthSales)
       },
+      refunds: {
+        day: sumMovements(dayRefunds),
+        week: sumMovements(weekRefunds),
+        month: sumMovements(monthRefunds)
+      },
       stats: {
         salesCount: sales.length,
         productsCount: products.length,
-        lowStockCount: products.filter((product) => product.stock <= product.lowStockAlert).length
+        lowStockCount: products.filter((product) => product.stock <= product.lowStockAlert).length,
+        refundCount: monthRefunds.length
       },
-      topProducts
+      topProducts,
+      refundedProducts: recentRefunds.map((movement) => ({
+        _id: movement._id,
+        createdAt: movement.createdAt,
+        productName: movement.product?.name || movement.productName || "Produit non reference",
+        productReference: movement.productReference || movement.product?.barcode || "",
+        quantity: movement.quantity,
+        amount: movement.amount,
+        reason: movement.reason,
+        paymentMethod: movement.paymentMethod
+      }))
     });
   })
 );
