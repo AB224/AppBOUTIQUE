@@ -22,13 +22,42 @@ const upload = multer({
 
 const getCell = (row, keys, fallback = "") => {
   const key = keys.find((item) => row[item] !== undefined && row[item] !== null && row[item] !== "");
-  return key ? row[key] : fallback;
+  if (key) return row[key];
+
+  const normalizedRow = Object.entries(row).reduce((current, [rowKey, value]) => {
+    current[normalizeKey(rowKey)] = value;
+    return current;
+  }, {});
+  const normalizedKey = keys.find((item) => {
+    const value = normalizedRow[normalizeKey(item)];
+    return value !== undefined && value !== null && value !== "";
+  });
+
+  return normalizedKey ? normalizedRow[normalizeKey(normalizedKey)] : fallback;
 };
 
 const toNumber = (value, fallback = 0) => {
-  const number = Number(value);
+  if (typeof value === "number") return Number.isFinite(value) ? value : fallback;
+  let normalized = String(value || "")
+    .trim()
+    .replace(/\s/g, "");
+  if (normalized.includes(",") && normalized.includes(".")) {
+    normalized = normalized.replace(/,/g, "");
+  } else if (normalized.includes(",") && !normalized.includes(".")) {
+    normalized = normalized.replace(/,/g, ".");
+  }
+  const number = Number(normalized);
   return Number.isFinite(number) ? number : fallback;
 };
+
+function normalizeKey(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
 
 const rowsToObjects = (rows) => {
   const headers = (rows[0] || []).map((header) => String(header || "").trim());
@@ -140,6 +169,9 @@ router.get(
         nom: "",
         type: "restock",
         quantite: 1,
+        stock_actuel: "",
+        prix_achat: "",
+        prix_vente: "",
         note: "Ajout via Excel"
       }
     ];
@@ -176,6 +208,9 @@ router.get(
           nom: "",
           type: "",
           quantite: "",
+          stock_actuel: "",
+          prix_achat: "",
+          prix_vente: "",
           note: ""
         })
       }
@@ -217,18 +252,57 @@ router.post(
 
     for (const row of rows) {
       const barcode = String(getCell(row, ["code_barres", "barcode", "Code-barres", "Code barres"])).trim();
-      const name = String(getCell(row, ["nom", "name", "produit", "Produit"])).trim();
+      const externalReference = String(getCell(row, ["reference_intrant", "Référence intrant", "Reference intrant"])).trim();
+      const reference = barcode || externalReference;
+      const name = String(getCell(row, ["nom", "name", "produit", "Produit", "libelle_intrant", "Libellé intrant", "Libelle intrant"])).trim();
       const quantityValue = getCell(row, ["quantite", "quantity", "Quantite"], "");
-      const targetStockValue = getCell(row, ["stock_actuel", "stock", "Stock"], "");
-      if (!barcode && !name) {
+      const targetStockValue = getCell(row, [
+        "stock_actuel",
+        "stock",
+        "Stock",
+        "Stock à jour",
+        "Stock a jour",
+        "Somme des entrées achats",
+        "Somme des entrees achats"
+      ], "");
+      if (!reference && !name) {
         skipped += 1;
         continue;
       }
 
-      const product = await Product.findOne(barcode ? { barcode } : { name });
+      const purchasePriceValue = getCell(row, [
+        "prix_achat",
+        "purchasePrice",
+        "Prix achat",
+        "Valorisation stock intrants € (au coût d'achat)",
+        "Valorisation stock intrants au cout d'achat"
+      ], "");
+      const targetStock = toNumber(targetStockValue, 0);
+      const valuation = toNumber(purchasePriceValue, 0);
+      const purchasePrice = targetStock > 0 && valuation > targetStock ? valuation / targetStock : valuation;
+
+      let product = await Product.findOne(reference ? { barcode: reference } : { name });
+      const salePrice = Math.max(0, toNumber(getCell(row, ["prix_vente", "salePrice", "Prix vente"], purchasePrice), purchasePrice));
       if (!product) {
-        skipped += 1;
-        continue;
+        if (!name) {
+          skipped += 1;
+          continue;
+        }
+        product = await Product.create({
+          name,
+          category: String(getCell(row, ["categorie", "category", "Categorie"], "Epicerie")).trim() || "Epicerie",
+          purchasePrice: Math.max(0, purchasePrice),
+          salePrice,
+          stock: 0,
+          barcode: reference,
+          lowStockAlert: toNumber(getCell(row, ["alerte_stock_faible", "lowStockAlert", "Alerte"], 5), 5)
+        });
+      } else {
+        product.name = name || product.name;
+        product.category = String(getCell(row, ["categorie", "category", "Categorie"], product.category)).trim() || product.category;
+        product.purchasePrice = purchasePrice > 0 ? Math.max(0, purchasePrice) : product.purchasePrice;
+        product.salePrice = product.salePrice > 0 ? product.salePrice : salePrice;
+        product.lowStockAlert = toNumber(getCell(row, ["alerte_stock_faible", "lowStockAlert", "Alerte"], product.lowStockAlert), product.lowStockAlert);
       }
 
       const hasQuantity = quantityValue !== "";
