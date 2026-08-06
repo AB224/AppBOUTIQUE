@@ -75,6 +75,8 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password, totpCode) => {
     const response = await api("/auth/login", { method: "POST", body: { email, password, totpCode } });
+    localStorage.setItem("token", response.token);
+    localStorage.setItem("user", JSON.stringify(response.user));
     setToken(response.token);
     setUser(response.user);
     return response;
@@ -86,6 +88,8 @@ export function AuthProvider({ children }) {
 
   const verifyGoogleCode = async (requestId, code) => {
     const response = await api("/auth/google/verify-code", { method: "POST", body: { requestId, code } });
+    localStorage.setItem("token", response.token);
+    localStorage.setItem("user", JSON.stringify(response.user));
     setToken(response.token);
     setUser(response.user);
     return response;
