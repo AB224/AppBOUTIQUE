@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const GOOGLE_SCRIPT_ID = "google-identity-service";
 
 export function LoginPage() {
   const { login, requestGoogleCode, verifyGoogleCode } = useAuth();
+  const navigate = useNavigate();
   const googleButtonRef = useRef(null);
   const [email, setEmail] = useState("devjsfullstrack@gmail.com");
   const [password, setPassword] = useState("Admin123!");
@@ -75,6 +77,7 @@ export function LoginPage() {
     setMessage("");
     try {
       await login(email, password, totpCode);
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -89,6 +92,7 @@ export function LoginPage() {
     setMessage("");
     try {
       await verifyGoogleCode(googleRequestId, emailCode);
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

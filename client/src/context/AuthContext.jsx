@@ -3,12 +3,19 @@ import { api } from "../services/api";
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [user, setUser] = useState(() => {
+const readStoredUser = () => {
+  try {
     const raw = localStorage.getItem("user");
     return raw ? JSON.parse(raw) : null;
-  });
+  } catch (error) {
+    localStorage.removeItem("user");
+    return null;
+  }
+};
+
+export function AuthProvider({ children }) {
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [user, setUser] = useState(readStoredUser);
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
