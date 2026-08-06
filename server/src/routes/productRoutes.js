@@ -20,6 +20,7 @@ const upload = multer({
 });
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const productReferenceRegex = /^H\d{5}$/;
+let productReferencesChecked = false;
 
 const formatProductReference = (number) => `H${String(number).padStart(5, "0")}`;
 
@@ -30,6 +31,26 @@ const getNextProductReference = async () => {
     return Number.isFinite(value) ? Math.max(max, value) : max;
   }, 0);
   return formatProductReference(maxReference + 1);
+};
+
+const ensureProductReferences = async () => {
+  if (productReferencesChecked) return;
+
+  const products = await Product.find().sort({ createdAt: 1, _id: 1 });
+  const shouldNormalize = products.some((product) => !productReferenceRegex.test(String(product.barcode || "")));
+  if (!shouldNormalize) {
+    productReferencesChecked = true;
+    return;
+  }
+
+  let index = 1;
+  for (const product of products) {
+    product.barcode = formatProductReference(index);
+    await product.save();
+    index += 1;
+  }
+
+  productReferencesChecked = true;
 };
 
 const getCell = (row, keys, fallback = "") => {
@@ -82,6 +103,7 @@ router.get(
   "/",
   protect,
   asyncHandler(async (req, res) => {
+    await ensureProductReferences();
     const search = String(req.query.q || "").trim().slice(0, 80);
     const query = search
       ? {
@@ -101,6 +123,7 @@ router.get(
   "/export/excel",
   protect,
   asyncHandler(async (req, res) => {
+    await ensureProductReferences();
     const products = await Product.find().sort({ name: 1 });
     const rows = products.map((product) => ({
       ref: product.barcode,
