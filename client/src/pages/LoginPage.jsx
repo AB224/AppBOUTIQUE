@@ -5,17 +5,16 @@ import { useAuth } from "../context/AuthContext";
 const GOOGLE_SCRIPT_ID = "google-identity-service";
 
 export function LoginPage() {
-  const { login, requestGoogleCode, verifyGoogleCode, requestTotpReset, confirmTotpReset } = useAuth();
+  const { requestGoogleCode, verifyGoogleCode, requestLocalCode, verifyLocalCode } = useAuth();
   const navigate = useNavigate();
   const googleButtonRef = useRef(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [totpCode, setTotpCode] = useState("");
   const [emailCode, setEmailCode] = useState("");
   const [googleRequestId, setGoogleRequestId] = useState("");
   const [googleEmail, setGoogleEmail] = useState("");
-  const [totpResetRequestId, setTotpResetRequestId] = useState("");
-  const [totpResetCode, setTotpResetCode] = useState("");
+  const [localRequestId, setLocalRequestId] = useState("");
+  const [localCode, setLocalCode] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -78,8 +77,9 @@ export function LoginPage() {
     setError("");
     setMessage("");
     try {
-      await login(email, password, totpCode);
-      navigate("/", { replace: true });
+      const data = await requestLocalCode(email, password);
+      setLocalRequestId(data.requestId);
+      setMessage(data.message);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -102,30 +102,14 @@ export function LoginPage() {
     }
   };
 
-  const handleTotpResetRequest = async () => {
+  const handleLocalVerify = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setError("");
     setMessage("");
     try {
-      const data = await requestTotpReset(email, password);
-      setTotpResetRequestId(data.requestId);
-      setMessage(data.message);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTotpResetConfirm = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const data = await confirmTotpReset(totpResetRequestId, totpResetCode);
-      setTotpResetRequestId("");
-      setTotpResetCode("");
-      setMessage(data.message);
+      await verifyLocalCode(localRequestId, localCode);
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -163,7 +147,7 @@ export function LoginPage() {
 
           <section className="card login-card">
             <h2>Connexion locale</h2>
-            <p className="muted">Conservee comme solution de secours pour l'administration.</p>
+            <p className="muted">Saisissez votre mot de passe, puis validez le code recu par e-mail.</p>
             <form onSubmit={handleSubmit} className="form-grid">
               <label>
                 Email
@@ -173,29 +157,21 @@ export function LoginPage() {
                 Mot de passe
                 <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
               </label>
-              <label>
-                Code TOTP
-                <input value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Optionnel si non active" maxLength="6" />
-              </label>
               <button type="submit" className="ghost" disabled={loading}>
-                {loading ? "Connexion..." : "Connexion locale"}
+                {loading ? "Envoi..." : "Recevoir le code"}
               </button>
             </form>
-            {!totpResetRequestId ? (
-              <button type="button" className="link-button top-gap" onClick={handleTotpResetRequest} disabled={loading || !email || !password}>
-                Reinitialiser le TOTP
-              </button>
-            ) : (
-              <form onSubmit={handleTotpResetConfirm} className="form-grid top-gap">
+            {localRequestId ? (
+              <form onSubmit={handleLocalVerify} className="form-grid top-gap">
                 <label>
-                  Code de reinitialisation recu par email
-                  <input value={totpResetCode} onChange={(e) => setTotpResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength="6" required />
+                  Code recu par e-mail
+                  <input value={localCode} onChange={(e) => setLocalCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength="6" required />
                 </label>
                 <button type="submit" className="ghost" disabled={loading}>
-                  {loading ? "Verification..." : "Valider la reinitialisation"}
+                  {loading ? "Verification..." : "Valider le code"}
                 </button>
               </form>
-            )}
+              ) : null}
           </section>
         </div>
 

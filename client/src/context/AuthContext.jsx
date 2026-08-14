@@ -73,14 +73,16 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("appboutique:auth-expired", handleAuthExpired);
   }, []);
 
-  const login = async (email, password, totpCode) => {
-    const response = await api("/auth/login", { method: "POST", body: { email, password, totpCode } });
+  const storeAuthenticatedUser = (response) => {
     localStorage.setItem("token", response.token);
     localStorage.setItem("user", JSON.stringify(response.user));
     setToken(response.token);
     setUser(response.user);
     return response;
   };
+
+  const requestLocalCode = async (email, password) => api("/auth/local/request-code", { method: "POST", body: { email, password } });
+  const verifyLocalCode = async (requestId, code) => storeAuthenticatedUser(await api("/auth/local/verify-code", { method: "POST", body: { requestId, code } }));
 
   const requestGoogleCode = async (credential) => {
     return api("/auth/google/request-code", { method: "POST", body: { credential } });
@@ -88,11 +90,7 @@ export function AuthProvider({ children }) {
 
   const verifyGoogleCode = async (requestId, code) => {
     const response = await api("/auth/google/verify-code", { method: "POST", body: { requestId, code } });
-    localStorage.setItem("token", response.token);
-    localStorage.setItem("user", JSON.stringify(response.user));
-    setToken(response.token);
-    setUser(response.user);
-    return response;
+    return storeAuthenticatedUser(response);
   };
 
   const requestTotpReset = async (email, password) => api("/auth/local/request-totp-reset", { method: "POST", body: { email, password } });
@@ -112,7 +110,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ token, user, authReady, login, logout, refreshUser, setUser, requestGoogleCode, verifyGoogleCode, requestTotpReset, confirmTotpReset }}
+      value={{ token, user, authReady, logout, refreshUser, setUser, requestGoogleCode, verifyGoogleCode, requestLocalCode, verifyLocalCode, requestTotpReset, confirmTotpReset }}
     >
       {children}
     </AuthContext.Provider>

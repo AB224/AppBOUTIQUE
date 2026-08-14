@@ -21,7 +21,7 @@ export async function api(path, options = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: "Erreur reseau" }));
-    const isLoginRequest = path === "/auth/login" || path.startsWith("/auth/google/");
+    const isLoginRequest = path === "/auth/login" || path.startsWith("/auth/google/") || path.startsWith("/auth/local/");
     if (response.status === 401 && !isLoginRequest) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");

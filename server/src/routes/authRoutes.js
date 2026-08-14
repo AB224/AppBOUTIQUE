@@ -150,6 +150,68 @@ router.post(
 );
 
 router.post(
+  "/local/request-code",
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    const normalizedEmail = String(email || "").toLowerCase().trim();
+    if (!isAuthorizedEmail(normalizedEmail)) {
+      res.status(401);
+      throw new Error("Email ou mot de passe invalide");
+    }
+
+    const user = await User.findOne({ email: normalizedEmail }).select("+failedLoginAttempts +lockedUntil");
+    if (!user || !(await user.matchPassword(password))) {
+      if (user) {
+        user.failedLoginAttempts += 1;
+        if (user.failedLoginAttempts >= 5) user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+        await user.save();
+      }
+      res.status(401);
+      throw new Error("Email ou mot de passe invalide");
+    }
+    if (isLocked(user)) {
+      res.status(423);
+      throw new Error("Compte temporairement verrouille. Reessayez dans 15 minutes.");
+    }
+
+    const otpSession = await issueLoginOtp(user);
+    res.json({
+      message: `Un code de connexion a ete envoye a ${otpSession.email}`,
+      requestId: otpSession.requestId,
+      email: otpSession.email
+    });
+  })
+);
+
+router.post(
+  "/local/verify-code",
+  asyncHandler(async (req, res) => {
+    const { requestId, code } = req.body;
+    const user = await User.findOne({ loginOtpRequestId: String(requestId || "") }).select(
+      "+loginOtpHash +loginOtpExpiresAt +loginOtpRequestId +failedLoginAttempts +lockedUntil"
+    );
+    if (!user || !isAuthorizedEmail(user.email) || !user.loginOtpExpiresAt || user.loginOtpExpiresAt.getTime() < Date.now()) {
+      res.status(400);
+      throw new Error("Le code de connexion a expire. Recommencez la procedure.");
+    }
+    if (!isHashMatch(user.loginOtpHash, String(code || "").trim())) {
+      res.status(400);
+      throw new Error("Code de connexion invalide");
+    }
+
+    user.loginOtpHash = "";
+    user.loginOtpExpiresAt = null;
+    user.loginOtpRequestId = "";
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = null;
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    res.json({ token: generateToken(user._id), user: serializeUser(user) });
+  })
+);
+
+router.post(
   "/local/confirm-totp-reset",
   asyncHandler(async (req, res) => {
     const { requestId, code } = req.body;
