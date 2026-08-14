@@ -225,7 +225,7 @@ export function PosPage() {
               <option value="">Vente sans client</option>
               {customers.map((entry) => (
                 <option key={entry._id} value={entry._id}>
-                  {entry.name}
+                  {[entry.name, entry.firstName].filter(Boolean).join(" ")}
                 </option>
               ))}
             </select>

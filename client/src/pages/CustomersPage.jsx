@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import { formatCurrency } from "../utils/currency";
 
-const emptyCustomer = { name: "", phone: "", email: "" };
+const emptyCustomer = { name: "", firstName: "", phone: "" };
 const emptyCredit = { reference: "", description: "", amount: "" };
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString("fr-FR") : "-");
+const formatCustomerName = (customer) => [customer?.name, customer?.firstName].filter(Boolean).join(" ");
 
 export function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -131,12 +132,12 @@ export function CustomersPage() {
             <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </label>
           <label>
-            Telephone
-            <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            Prénoms
+            <input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required />
           </label>
           <label>
-            Email
-            <input value={form.email} type="email" onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            Portable
+            <input value={form.phone} type="tel" inputMode="tel" onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
           </label>
           <button className="primary">{editingId ? "Mettre a jour" : "Enregistrer"}</button>
         </form>
@@ -147,8 +148,8 @@ export function CustomersPage() {
             {customers.map((customer) => (
               <div key={customer._id} className="list-row">
                 <div>
-                  <strong>{customer.name}</strong>
-                  <div className="muted">{customer.phone || customer.email || "Sans coordonnees"}</div>
+                  <strong>{formatCustomerName(customer)}</strong>
+                  <div className="muted">{customer.phone || "Sans numéro de portable"}</div>
                   {customer.creditSummary?.remainingAmount > 0 ? (
                     <div className={customer.creditSummary.dueCount ? "danger-text" : "muted"}>
                       Creance: {formatCurrency(customer.creditSummary.remainingAmount)}
@@ -161,7 +162,7 @@ export function CustomersPage() {
                     type="button"
                     className="ghost"
                     onClick={() => {
-                      setForm(customer);
+                      setForm({ name: customer.name || "", firstName: customer.firstName || "", phone: customer.phone || "" });
                       setEditingId(customer._id);
                     }}
                   >
@@ -191,7 +192,7 @@ export function CustomersPage() {
         <section className="stack">
           <div className="credit-hero card">
             <div>
-              <h2>{selected.name}</h2>
+              <h2>{formatCustomerName(selected)}</h2>
               <p>Creance restante: <strong>{formatCurrency(totalCredit)}</strong></p>
             </div>
             <div className={dueCredits.length ? "credit-badge danger-badge" : "credit-badge"}>
@@ -280,7 +281,7 @@ export function CustomersPage() {
           </section>
 
           <div className="card">
-            <h2>Achats de {selected.name}</h2>
+            <h2>Achats de {formatCustomerName(selected)}</h2>
             <div className="list">
               {history.length ? (
                 history.map((sale) => (

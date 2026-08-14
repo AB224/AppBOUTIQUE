@@ -24,7 +24,7 @@ const generateInvoicePdfBuffer = (invoice, customer) =>
     doc.moveDown();
 
     doc.fontSize(14).text("Client");
-    doc.fontSize(12).text(customer.name);
+    doc.fontSize(12).text([customer.name, customer.firstName].filter(Boolean).join(" "));
     doc.text(customer.email || "");
     doc.text(customer.phone || "");
     doc.moveDown();
