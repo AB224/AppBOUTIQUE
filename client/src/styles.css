@@ -569,6 +569,17 @@ td {
   min-height: 44px;
 }
 
+.link-button {
+  border: 0;
+  background: transparent;
+  color: var(--primary, #1f7a5b);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
 .top-gap {
   margin-top: 16px;
 }

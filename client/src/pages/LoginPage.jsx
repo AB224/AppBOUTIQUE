@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 const GOOGLE_SCRIPT_ID = "google-identity-service";
 
 export function LoginPage() {
-  const { login, requestGoogleCode, verifyGoogleCode } = useAuth();
+  const { login, requestGoogleCode, verifyGoogleCode, requestTotpReset, confirmTotpReset } = useAuth();
   const navigate = useNavigate();
   const googleButtonRef = useRef(null);
   const [email, setEmail] = useState("");
@@ -14,6 +14,8 @@ export function LoginPage() {
   const [emailCode, setEmailCode] = useState("");
   const [googleRequestId, setGoogleRequestId] = useState("");
   const [googleEmail, setGoogleEmail] = useState("");
+  const [totpResetRequestId, setTotpResetRequestId] = useState("");
+  const [totpResetCode, setTotpResetCode] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -100,6 +102,37 @@ export function LoginPage() {
     }
   };
 
+  const handleTotpResetRequest = async () => {
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const data = await requestTotpReset(email, password);
+      setTotpResetRequestId(data.requestId);
+      setMessage(data.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTotpResetConfirm = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const data = await confirmTotpReset(totpResetRequestId, totpResetCode);
+      setTotpResetRequestId("");
+      setTotpResetCode("");
+      setMessage(data.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="login-screen">
       <div className="login-panel login-wide">
@@ -148,6 +181,21 @@ export function LoginPage() {
                 {loading ? "Connexion..." : "Connexion locale"}
               </button>
             </form>
+            {!totpResetRequestId ? (
+              <button type="button" className="link-button top-gap" onClick={handleTotpResetRequest} disabled={loading || !email || !password}>
+                Reinitialiser le TOTP
+              </button>
+            ) : (
+              <form onSubmit={handleTotpResetConfirm} className="form-grid top-gap">
+                <label>
+                  Code de reinitialisation recu par email
+                  <input value={totpResetCode} onChange={(e) => setTotpResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength="6" required />
+                </label>
+                <button type="submit" className="ghost" disabled={loading}>
+                  {loading ? "Verification..." : "Valider la reinitialisation"}
+                </button>
+              </form>
+            )}
           </section>
         </div>
 

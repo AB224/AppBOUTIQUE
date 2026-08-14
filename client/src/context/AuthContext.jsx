@@ -95,6 +95,9 @@ export function AuthProvider({ children }) {
     return response;
   };
 
+  const requestTotpReset = async (email, password) => api("/auth/local/request-totp-reset", { method: "POST", body: { email, password } });
+  const confirmTotpReset = async (requestId, code) => api("/auth/local/confirm-totp-reset", { method: "POST", body: { requestId, code } });
+
   const refreshUser = async () => {
     if (!localStorage.getItem("token")) return null;
     const data = await api("/auth/me");
@@ -109,7 +112,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ token, user, authReady, login, logout, refreshUser, setUser, requestGoogleCode, verifyGoogleCode }}
+      value={{ token, user, authReady, login, logout, refreshUser, setUser, requestGoogleCode, verifyGoogleCode, requestTotpReset, confirmTotpReset }}
     >
       {children}
     </AuthContext.Provider>

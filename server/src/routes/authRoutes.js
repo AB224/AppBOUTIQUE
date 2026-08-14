@@ -114,6 +114,55 @@ router.post(
 );
 
 router.post(
+  "/local/request-totp-reset",
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email: String(email || "").toLowerCase().trim() }).select(
+      "+password +loginOtpHash +loginOtpExpiresAt +loginOtpRequestId"
+    );
+    if (!user || !(await user.matchPassword(password))) {
+      res.status(401);
+      throw new Error("Email ou mot de passe invalide");
+    }
+
+    const otpSession = await issueLoginOtp(user);
+    res.json({
+      message: `Un code de reinitialisation a ete envoye a ${otpSession.email}`,
+      requestId: otpSession.requestId,
+      email: otpSession.email
+    });
+  })
+);
+
+router.post(
+  "/local/confirm-totp-reset",
+  asyncHandler(async (req, res) => {
+    const { requestId, code } = req.body;
+    const user = await User.findOne({ loginOtpRequestId: String(requestId || "") }).select(
+      "+loginOtpHash +loginOtpExpiresAt +loginOtpRequestId +totpSecret"
+    );
+    if (!user || !user.loginOtpExpiresAt || user.loginOtpExpiresAt.getTime() < Date.now()) {
+      res.status(400);
+      throw new Error("Le code de reinitialisation a expire. Recommencez la procedure.");
+    }
+    if (!isHashMatch(user.loginOtpHash, String(code || "").trim())) {
+      res.status(400);
+      throw new Error("Code de reinitialisation invalide");
+    }
+
+    user.totpEnabled = false;
+    user.totpSecret = "";
+    user.totpVerifiedAt = null;
+    user.loginOtpHash = "";
+    user.loginOtpExpiresAt = null;
+    user.loginOtpRequestId = "";
+    await user.save();
+
+    res.json({ message: "TOTP reinitialise. Connectez-vous avec votre email et mot de passe, puis activez un nouveau TOTP dans Securite." });
+  })
+);
+
+router.post(
   "/google/request-code",
   asyncHandler(async (req, res) => {
     const { credential } = req.body;
