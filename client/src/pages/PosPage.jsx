@@ -2,20 +2,40 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
 import { formatCurrency } from "../utils/currency";
 
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
 const printTicket = (sale) => {
   const ticketWindow = window.open("", "_blank", "width=360,height=640");
-  if (!ticketWindow) return;
+  if (!ticketWindow) return false;
 
   const items = sale.items
-    .map((item) => `<div style="display:flex;justify-content:space-between;margin:6px 0;"><span>${item.name} x${item.quantity}</span><strong>${formatCurrency(item.total)}</strong></div>`)
+    .map(
+      (item) =>
+        `<div style="margin:8px 0;"><div style="display:flex;justify-content:space-between;gap:12px;"><span>${escapeHtml(item.name)}</span><strong>${formatCurrency(item.total)}</strong></div><small>${item.quantity} x ${formatCurrency(item.price)}</small></div>`
+    )
     .join("");
+
+  ticketWindow.onload = () => {
+    ticketWindow.focus();
+    ticketWindow.print();
+  };
 
   ticketWindow.document.write(`
     <html>
-      <head><title>${sale.ticketNumber}</title></head>
-      <body style="font-family:Arial;padding:20px;max-width:320px;margin:0 auto;">
-        <h2 style="margin-bottom:8px;">Ticket de caisse</h2>
-        <div>${sale.ticketNumber}</div>
+      <head>
+        <title>${escapeHtml(sale.ticketNumber)}</title>
+        <style>@page { margin: 8mm; } body { color:#111; } small { color:#555; }</style>
+      </head>
+      <body style="font-family:Arial,sans-serif;padding:20px;max-width:320px;margin:0 auto;">
+        <h2 style="margin:0 0 8px;text-align:center;">Les Deux Freres Alimentation</h2>
+        <div style="text-align:center;font-weight:bold;">Ticket de caisse</div>
+        <div style="margin-top:12px;">${escapeHtml(sale.ticketNumber)}</div>
         <div>${new Date(sale.createdAt).toLocaleString("fr-FR")}</div>
         <hr />
         ${items}
@@ -27,7 +47,7 @@ const printTicket = (sale) => {
     </html>
   `);
   ticketWindow.document.close();
-  ticketWindow.focus();
+  return true;
 };
 
 export function PosPage() {
@@ -39,6 +59,7 @@ export function PosPage() {
   const [customer, setCustomer] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [cart, setCart] = useState([]);
+  const [lastSale, setLastSale] = useState(null);
   const [message, setMessage] = useState("");
   const [refundForm, setRefundForm] = useState({
     productId: "",
@@ -97,8 +118,8 @@ export function PosPage() {
       items: cart.map((item) => ({ product: item.product, quantity: item.quantity }))
     };
     const sale = await api("/sales", { method: "POST", body: payload });
-    setMessage(`Ticket ${sale.ticketNumber} genere pour ${formatCurrency(sale.total)}`);
-    printTicket(sale);
+    setLastSale(sale);
+    setMessage(`Vente ${sale.ticketNumber} enregistree pour ${formatCurrency(sale.total)}. Vous pouvez imprimer le ticket ci-dessous.`);
     setCart([]);
     setCustomer("");
     load();
@@ -130,6 +151,17 @@ export function PosPage() {
         <p>Interface tactile rapide avec recherche par nom ou code-barres.</p>
       </div>
       {message ? <div className="alert success">{message}</div> : null}
+      {lastSale ? (
+        <div className="card actions">
+          <div>
+            <strong>Dernier ticket : {lastSale.ticketNumber}</strong>
+            <div className="muted">Imprimez-le maintenant ou retrouvez-le dans l'historique pour le reediter.</div>
+          </div>
+          <button type="button" className="primary" onClick={() => printTicket(lastSale)}>
+            Imprimer le ticket
+          </button>
+        </div>
+      ) : null}
       <section className="pos-layout">
         <div className="card">
           <div className="toolbar">
@@ -358,6 +390,7 @@ export function PosPage() {
                 <th>Client</th>
                 <th>Paiement</th>
                 <th>Total</th>
+                <th>Ticket</th>
               </tr>
             </thead>
             <tbody>
@@ -368,6 +401,11 @@ export function PosPage() {
                   <td>{sale.customer?.name || "-"}</td>
                   <td>{sale.paymentMethod === "cash" ? "Especes" : "Carte"}</td>
                   <td>{formatCurrency(sale.total)}</td>
+                  <td>
+                    <button type="button" className="ghost" onClick={() => printTicket(sale)}>
+                      Reimprimer
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
