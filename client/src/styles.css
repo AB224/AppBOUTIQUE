@@ -1202,3 +1202,161 @@ th {
     border-radius: 18px;
   }
 }
+
+/* Adaptation automatique à la taille et à l'orientation de l'appareil */
+@media (max-width: 1440px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-main-grid {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-main-grid,
+  .content-grid,
+  .product-layout,
+  .pos-layout,
+  .login-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product-form-card {
+    position: static;
+  }
+
+  .hero-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .stack {
+    gap: 14px;
+  }
+
+  .page-header h1,
+  .hero h1 {
+    font-size: clamp(1.45rem, 7vw, 2rem);
+  }
+
+  .page-header p,
+  .hero p {
+    font-size: 0.92rem;
+  }
+
+  .hero,
+  .dashboard-hero {
+    min-height: auto;
+    padding: 22px 18px;
+  }
+
+  .hero-metrics,
+  .stats-grid,
+  .dashboard-detail-grid,
+  .product-summary-grid,
+  .form-two-columns,
+  .invoice-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-metrics {
+    min-width: 0;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product-tile {
+    min-height: 104px;
+    padding: 13px;
+    font-size: 0.9rem;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions > button,
+  .actions > .file-action {
+    flex: 1 1 140px;
+  }
+
+  .list-row {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .credit-row,
+  .credit-actions {
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+  }
+
+  .credit-actions > * {
+    width: 100%;
+  }
+
+  .payment-input {
+    width: 100%;
+  }
+
+  .table-wrap {
+    margin: 0 -18px;
+    padding: 0 18px;
+  }
+
+  .table-wrap table {
+    min-width: 620px;
+  }
+
+  .login-screen {
+    display: block;
+    padding: 16px;
+  }
+
+  .login-panel {
+    margin: 6vh auto 0;
+    padding: 22px 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  .main {
+    padding: 12px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nav-link span:last-child {
+    display: none;
+  }
+
+  .nav-link {
+    min-width: 42px;
+    justify-content: center;
+    padding: 9px 12px;
+  }
+
+  .nav-icon {
+    width: auto;
+  }
+}
