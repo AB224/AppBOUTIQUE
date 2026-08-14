@@ -36,7 +36,7 @@ services:
       - key: ADMIN_NAME
         value: Administrateur
       - key: ADMIN_EMAIL
-        value: devjsfullstrack@gmail.com
+        value: lesdeuxfreresalimentationgener@gmail.com
       - key: ADMIN_PASSWORD
         sync: false
 

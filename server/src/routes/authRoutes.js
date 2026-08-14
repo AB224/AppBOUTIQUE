@@ -27,6 +27,11 @@ const hashValue = (value) => crypto.createHash("sha256").update(String(value)).d
 const randomPassword = () => crypto.randomBytes(24).toString("hex");
 const createOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const createRequestId = () => crypto.randomBytes(24).toString("hex");
+const getAuthorizedEmail = () => String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+const isAuthorizedEmail = (email) => {
+  const authorizedEmail = getAuthorizedEmail();
+  return !authorizedEmail || String(email || "").trim().toLowerCase() === authorizedEmail;
+};
 const getGoogleAudiences = () =>
   [process.env.GOOGLE_CLIENT_ID, ...(process.env.GOOGLE_CLIENT_IDS || "").split(",")]
     .map((value) => String(value || "").trim())
@@ -75,7 +80,12 @@ router.post(
   "/login",
   asyncHandler(async (req, res) => {
     const { email, password, totpCode } = req.body;
-    const user = await User.findOne({ email: String(email || "").toLowerCase().trim() }).select(
+    const normalizedEmail = String(email || "").toLowerCase().trim();
+    if (!isAuthorizedEmail(normalizedEmail)) {
+      res.status(401);
+      throw new Error("Email ou mot de passe invalide");
+    }
+    const user = await User.findOne({ email: normalizedEmail }).select(
       "+totpSecret +failedLoginAttempts +lockedUntil"
     );
     if (!user || !(await user.matchPassword(password))) {
@@ -117,7 +127,12 @@ router.post(
   "/local/request-totp-reset",
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    const user = await User.findOne({ email: String(email || "").toLowerCase().trim() }).select(
+    const normalizedEmail = String(email || "").toLowerCase().trim();
+    if (!isAuthorizedEmail(normalizedEmail)) {
+      res.status(401);
+      throw new Error("Email ou mot de passe invalide");
+    }
+    const user = await User.findOne({ email: normalizedEmail }).select(
       "+password +loginOtpHash +loginOtpExpiresAt +loginOtpRequestId"
     );
     if (!user || !(await user.matchPassword(password))) {
@@ -173,6 +188,10 @@ router.post(
 
     const payload = await verifyGoogleCredential(credential);
     const email = String(payload.email).toLowerCase();
+    if (!isAuthorizedEmail(email)) {
+      res.status(403);
+      throw new Error("Ce compte Google n'est pas autorise a acceder a l'application");
+    }
     let user = await User.findOne({ $or: [{ email }, { googleId: payload.sub }] }).select(
       "+loginOtpHash +loginOtpExpiresAt +loginOtpRequestId"
     );
