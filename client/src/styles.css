@@ -27,6 +27,13 @@ body {
   min-height: 100vh;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
 button,
 input,
 select {
@@ -44,6 +51,7 @@ img {
 
 .shell {
   min-height: 100vh;
+  width: 100%;
 }
 
 .sidebar {
@@ -931,8 +939,10 @@ h1 {
 
 .main {
   margin-left: 292px;
+  width: calc(100% - 292px);
+  min-height: 100dvh;
   padding: 32px;
-  max-width: 1920px;
+  max-width: none;
 }
 
 .card {
@@ -1143,6 +1153,7 @@ th {
 
   .main {
     margin-left: 0;
+    width: 100%;
     padding: 24px;
   }
 }
