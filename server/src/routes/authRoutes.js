@@ -100,7 +100,7 @@ router.post(
         user.failedLoginAttempts += 1;
         await user.save();
         res.status(401);
-        throw new Error("Code TOTP requis ou invalide");
+        throw new Error("Code TOTP requis ou invalide. Verifiez que l'heure automatique est activee sur votre telephone.");
       }
     }
 

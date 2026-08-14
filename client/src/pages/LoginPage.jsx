@@ -8,8 +8,8 @@ export function LoginPage() {
   const { login, requestGoogleCode, verifyGoogleCode } = useAuth();
   const navigate = useNavigate();
   const googleButtonRef = useRef(null);
-  const [email, setEmail] = useState("devjsfullstrack@gmail.com");
-  const [password, setPassword] = useState("Admin123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [totpCode, setTotpCode] = useState("");
   const [emailCode, setEmailCode] = useState("");
   const [googleRequestId, setGoogleRequestId] = useState("");
@@ -142,7 +142,7 @@ export function LoginPage() {
               </label>
               <label>
                 Code TOTP
-                <input value={totpCode} onChange={(e) => setTotpCode(e.target.value)} inputMode="numeric" placeholder="Optionnel si non active" />
+                <input value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Optionnel si non active" maxLength="6" />
               </label>
               <button type="submit" className="ghost" disabled={loading}>
                 {loading ? "Connexion..." : "Connexion locale"}

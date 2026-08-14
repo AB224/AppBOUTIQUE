@@ -21,7 +21,8 @@ export async function api(path, options = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: "Erreur reseau" }));
-    if (response.status === 401) {
+    const isLoginRequest = path === "/auth/login" || path.startsWith("/auth/google/");
+    if (response.status === 401 && !isLoginRequest) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.dispatchEvent(new Event("appboutique:auth-expired"));
